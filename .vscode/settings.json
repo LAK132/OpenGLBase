@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.gd": "godot",
+        "xstring": "cpp",
+        "ostream": "cpp",
+        "vector": "cpp"
+    }
+}
