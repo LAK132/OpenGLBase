@@ -1,41 +1,63 @@
 #include "main.h"
 
 GLFWwindow* window = nullptr;
+float clearCol[4] = {0.45f, 0.55f, 0.60f, 1.00f};
+glakShader shader;
+glakObject vtxObj;
 ImGuiIO* io = nullptr;
-ImVec4 clearCol = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-vector<GLuint> shaders;
+
+GLuint vao, vbuffer, cbuffer;
 
 void loop()
 {
-    // ImGui_ImplGlfwGL3_NewFrame();
+    ImGui_ImplGlfwGL3_NewFrame();
+
+    static bool mainOpen = true;
+    ImGui::SetNextWindowSize(ImVec2(550,680), ImGuiCond_FirstUseEver);
+    if(ImGui::Begin("OpenGL Demo", &mainOpen, ImGuiWindowFlags_MenuBar))
+    {
+        glakCredits();
+        ImGui::End();
+    }
 }
 
 void draw()
 {
-    // ImGui::Render();
+    ImGui::Render();
 }
 
 void init()
 {
-    shaders.push_back(glCreateProgram());
-    GLAK::initShader(shaders.back(), "shaders\\vshader.glsl", GL_VERTEX_SHADER);
-    GLAK::initShader(shaders.back(), "shaders\\fshader.glsl", GL_FRAGMENT_SHADER);
-    GLAK::linkProgram(shaders.back());
-    glUseProgram(shaders.back());
+    shader.init(
+        glakReadShaderFile("shaders\\vshader.glsl"), 
+        glakReadShaderFile("shaders\\fshader.glsl"));
+
     glEnable(GL_DEPTH_TEST);
 
+    vtxObj.init();
+
+    glBindBuffer(GL_ARRAY_BUFFER, vtxObj.vtxBuff);
+    // glBufferData(GL_ARRAY_BUFFER, points.size()*sizeof(points4), NULL, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, vtxObj.colBuff);
+    // glBufferData(GL_ARRAY_BUFFER, points.size()*sizeof(points4), NULL, GL_STATIC_DRAW);
+
+    // GLuint vPosition = glGetAttribLocation(shader, "vPosition");
+    // glEnableVertexAttribArray(vPosition);
+    // glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
     // ImGui
-    // ImGui::CreateContext();
-    // io = &ImGui::GetIO();
-    // ImGui_ImplGlfwGL3_Init(window, true);
-    // ImGui::StyleColorsDark();
+    ImGui::CreateContext();
+    io = &ImGui::GetIO();
+    ImGui_ImplGlfwGL3_Init(window, true);
+    ImGui::StyleColorsDark();
 }
 
 void destroy()
 {
-    // ImGui_ImplGlfwGL3_Shutdown();
-    // ImGui::DestroyContext();
-    // glfwTerminate();
+    ImGui_ImplGlfwGL3_Shutdown();
+    ImGui::DestroyContext();
+
+    glfwTerminate();
 }
 
 int main(int argc, char** argv)
@@ -55,8 +77,6 @@ int main(int argc, char** argv)
     // gl3w
     gl3wInit();
 
-    shaders.clear();
-
     init();
 
     while(!glfwWindowShouldClose(window))
@@ -68,7 +88,7 @@ int main(int argc, char** argv)
         int dispW, dispH;
         glfwGetFramebufferSize(window, &dispW, &dispH);
         glViewport(0, 0, dispW, dispH);
-        glClearColor(clearCol.x, clearCol.y, clearCol.z, clearCol.w);
+        glClearColor(clearCol[0], clearCol[1], clearCol[2], clearCol[3]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         draw();

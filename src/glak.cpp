@@ -1,6 +1,6 @@
 #include "glak.h"
 
-void GLAK::readFile(const string& src, string& dst)
+void glakReadShaderFile(const string& src, string& dst)
 {
     FILE* ptr = fopen(src.c_str(), "r");
     if(ptr == NULL) 
@@ -17,14 +17,18 @@ void GLAK::readFile(const string& src, string& dst)
     fclose(ptr);
 }
 
-void GLAK::initShader(GLuint program, const string& filedir, GLenum type)
+string glakReadShaderFile(const string& src)
 {
-    string shaderstr = "";
+    string rtn = "";
+    glakReadShaderFile(src, rtn);
+    return rtn;
+}
 
-    readFile(filedir, shaderstr);
+void glakInitShader(GLuint program, const string& shaderstr, GLenum type)
+{
     if(shaderstr == "")
     {
-        cout << "Error reading shader " << filedir.c_str() << endl;
+        cout << "Error reading shader " << shaderstr.c_str() << endl;
         throw exception("Error reading shader");
     }
     GLuint shader = glCreateShader(type);
@@ -35,7 +39,7 @@ void GLAK::initShader(GLuint program, const string& filedir, GLenum type)
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
     if(!compiled)
     {
-        cout << "Error compiling shader " << filedir.c_str() << endl;
+        cout << "Error compiling shader " << shaderstr.c_str() << endl;
         GLint msgSize = 0;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &msgSize);
         string msg; msg.resize(msgSize);
@@ -46,7 +50,7 @@ void GLAK::initShader(GLuint program, const string& filedir, GLenum type)
     glAttachShader(program, shader);
 }
 
-void GLAK::linkProgram(GLuint program)
+void glakLinkProgram(GLuint program)
 {
     glLinkProgram(program);
     GLint linked;
@@ -63,7 +67,48 @@ void GLAK::linkProgram(GLuint program)
     }
 }
 
-void GLAK::credits()
+glakShader::glakShader(){}
+
+glakShader::glakShader(const glakShader& other)
+{
+    program = other.program;
+}
+
+glakShader::~glakShader()
+{
+    if (program.unique())
+        glDeleteProgram(*program);
+}
+
+void glakShader::init(const string& vshader, const string& fshader)
+{
+    program = make_shared<GLuint>(glCreateProgram());
+    glakInitShader(*program, vshader, GL_VERTEX_SHADER);
+    glakInitShader(*program, fshader, GL_FRAGMENT_SHADER);
+    glLinkProgram(*program);
+}
+
+void glakShader::use()
+{
+    if (program.use_count() > 0)
+        glUseProgram(*program);
+}
+
+void glakObject::init()
+{
+    glGenVertexArrays(1, &vtxArr);
+    glGenBuffers(1, &vtxBuff);
+    glGenBuffers(1, &colBuff);
+}
+
+glakObject::~glakObject()
+{
+    glDeleteBuffers(1, &colBuff);
+    glDeleteBuffers(1, &vtxBuff);
+    glDeleteVertexArrays(1, &vtxArr);
+}
+
+void glakCredits()
 {
     ImGui::PushID("Credits");
     if(ImGui::TreeNode("ImGui"))
@@ -93,6 +138,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
         )");
+        ImGui::TreePop();
     }
     if(ImGui::TreeNode("glm"))
     {
@@ -121,18 +167,22 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRA
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
         )");
+        ImGui::TreePop();
     }
     if(ImGui::TreeNode("gl3w"))
     {
         ImGui::Text("https://github.com/skaslev/gl3w");
+        ImGui::TreePop();
     }
     if(ImGui::TreeNode("GLFW3"))
     {
         ImGui::Text("http://www.glfw.org/");
+        ImGui::TreePop();
     }
     if(ImGui::TreeNode("Miniz"))
     {
         ImGui::Text("https://github.com/richgel999/miniz");
+        ImGui::TreePop();
     }
     ImGui::PopID();
 }

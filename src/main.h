@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <vector>
 using std::vector;
 #include "glak.h"
@@ -9,9 +10,10 @@ using std::vector;
 #define MAIN_H
 
 extern GLFWwindow* window;
+extern float clearCol[4];
+extern glakShader shader;
+extern glakObject vtxObj;
 extern ImGuiIO* io;
-extern ImVec4 clearCol;
-extern vector<GLuint> shaders;
 
 void init();
 void draw();
