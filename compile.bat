@@ -3,7 +3,7 @@
 REM ImGui
 cl /Fo:bin\imgui.obj        /c R:\dear-imgui\imgui.cpp      /nologo -EHsc -DNDEBUG /MD /IR:\dear-imgui
 cl /Fo:bin\imgui_draw.obj   /c R:\dear-imgui\imgui_draw.cpp /nologo -EHsc -DNDEBUG /MD /IR:\dear-imgui
-cl /Fo:bin\imgui_demo.obj   /c R:\dear-imgui\imgui_demo.cpp /nologo -EHsc -DNDEBUG /MD /IR:\dear-imgui
+REM cl /Fo:bin\imgui_demo.obj   /c R:\dear-imgui\imgui_demo.cpp /nologo -EHsc -DNDEBUG /MD /IR:\dear-imgui
 cl /Fo:bin\imgui_opegl.obj  /c lib\imgui_impl_glfw_gl3.cpp  /nologo -EHsc -DNDEBUG /MD /IR:\dear-imgui /Iinclude
 
 REM gl3w
@@ -17,5 +17,6 @@ cl /Fo:bin\main.obj     /c src\main.cpp     /nologo -EHsc -DNDEBUG /MD /Isrc /Ii
 REM link
 link /nologo /out:out\app.exe ^
 bin\main.obj bin\glak.obj ^
-bin\imgui_opegl.obj bin\imgui.obj bin\imgui_demo.obj bin\imgui_draw.obj ^
-bin\gl3w.obj lib\glfw3dll.lib lib\glfw3.lib 
+bin\gl3w.obj lib\glfw3dll.lib lib\glfw3.lib ^
+bin\imgui_opegl.obj bin\imgui.obj bin\imgui_draw.obj
+REM bin\imgui_opegl.obj bin\imgui.obj bin\imgui_demo.obj bin\imgui_draw.obj

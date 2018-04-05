@@ -3,6 +3,7 @@
         "*.gd": "godot",
         "xstring": "cpp",
         "ostream": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "memory": "cpp"
     }
 }
