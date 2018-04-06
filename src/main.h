@@ -12,7 +12,7 @@ using std::vector;
 extern GLFWwindow* window;
 extern float clearCol[4];
 extern glakShader shader;
-extern glakObject vtxObj;
+extern glakBuffer vtxObj;
 extern ImGuiIO* io;
 
 void init();
