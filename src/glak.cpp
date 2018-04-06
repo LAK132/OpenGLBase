@@ -77,35 +77,103 @@ glakShader::glakShader(const glakShader& other)
 glakShader::~glakShader()
 {
     if (program.unique())
+    {
         glDeleteProgram(*program);
+    }
 }
 
 void glakShader::init(const string& vshader, const string& fshader)
 {
-    program = make_shared<GLuint>(glCreateProgram());
+    program = make_shared<GLint>(glCreateProgram());
     glakInitShader(*program, vshader, GL_VERTEX_SHADER);
     glakInitShader(*program, fshader, GL_FRAGMENT_SHADER);
     glLinkProgram(*program);
+
+    position = glGetAttribLocation(*program, "vPosition");
+    normal = glGetAttribLocation(*program, "vNormal");
+    color = glGetAttribLocation(*program, "vColor");
+    texCoord = glGetAttribLocation(*program, "vTexCoord");
 }
 
-void glakShader::use()
+void glakShader::enable()
 {
-    if (program.use_count() > 0)
-        glUseProgram(*program);
+    glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
+    if (program.use_count() <= 0) return;
+    // if (program.use_count() <= 0) throw exception("No program");
+    glUseProgram(*program);
+    if (position >= 0)
+    {
+        glEnableVertexAttribArray(position);
+        glVertexAttribPointer(position, glakVertexConst::posSize, GL_FLOAT, GL_FALSE, sizeof(glakVertex), (GLvoid*)glakVertexConst::posOff);
+    } //else cout << "position = " << position << endl;
+    if (color >= 0)
+    {
+        glEnableVertexAttribArray(color);
+        glVertexAttribPointer(color, glakVertexConst::colSize, GL_FLOAT, GL_FALSE, sizeof(glakVertex), (GLvoid*)glakVertexConst::colOff);
+    } //else cout << "color = " << color << endl;
+    if (normal >= 0)
+    {
+        glEnableVertexAttribArray(normal);
+        glVertexAttribPointer(normal, glakVertexConst::normSize, GL_FLOAT, GL_TRUE, sizeof(glakVertex), (GLvoid*)glakVertexConst::normOff);
+    } //else cout << "normal = " << normal << endl;
+    if (texCoord >= 0)
+    {
+        glEnableVertexAttribArray(texCoord);
+        glVertexAttribPointer(texCoord, glakVertexConst::coordSize, GL_FLOAT, GL_FALSE, sizeof(glakVertex), (GLvoid*)glakVertexConst::coordOff);
+    } //else cout << "texCoord = " << texCoord << endl;
 }
 
-void glakObject::init()
-{
-    glGenVertexArrays(1, &vtxArr);
-    glGenBuffers(1, &vtxBuff);
-    glGenBuffers(1, &colBuff);
+void glakShader::disable()
+{    
+    if (position >= 0)   glDisableVertexAttribArray(position);
+    if (normal >= 0)     glDisableVertexAttribArray(normal);
+    if (color >= 0)      glDisableVertexAttribArray(color);
+    if (texCoord >= 0)   glDisableVertexAttribArray(texCoord);
+    glUseProgram(prevProgram);
 }
 
-glakObject::~glakObject()
+GLint glakShader::operator*() const
 {
-    glDeleteBuffers(1, &colBuff);
+    return *program;
+}
+
+void glakBuffer::init()
+{
+    glDeleteBuffers(1, &idxBuff);
     glDeleteBuffers(1, &vtxBuff);
     glDeleteVertexArrays(1, &vtxArr);
+    glGenVertexArrays(1, &vtxArr);
+    glGenBuffers(1, &vtxBuff);
+    glGenBuffers(1, &idxBuff);
+}
+
+glakBuffer::~glakBuffer()
+{
+    glDeleteBuffers(1, &idxBuff);
+    glDeleteBuffers(1, &vtxBuff);
+    glDeleteVertexArrays(1, &vtxArr);
+}
+
+void glakObject::draw()
+{
+    glBindVertexArray(buff.vtxArr);
+    glBindBuffer(GL_ARRAY_BUFFER, buff.vtxBuff);
+    glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(glakVertex), &(vertex[0]), GL_STATIC_DRAW);
+    
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buff.idxBuff);
+
+    for(auto it = polygon.begin(); it != polygon.end(); it++)
+    {
+        if (it->material > shader.size()) continue;
+        glakShader& sh = shader[it->material];
+
+        sh.enable();
+
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(it->index), &(it->index[0]), GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, sizeof(it->index), GL_UNSIGNED_SHORT, NULL);
+
+        sh.disable();
+    }
 }
 
 void glakCredits()

@@ -3,10 +3,9 @@
 GLFWwindow* window = nullptr;
 float clearCol[4] = {0.45f, 0.55f, 0.60f, 1.00f};
 glakShader shader;
-glakObject vtxObj;
+glakBuffer vtxObj;
+glakObject obj;
 ImGuiIO* io = nullptr;
-
-GLuint vao, vbuffer, cbuffer;
 
 void loop()
 {
@@ -23,27 +22,40 @@ void loop()
 
 void draw()
 {
+    obj.draw();
+
     ImGui::Render();
 }
 
 void init()
 {
+    vtxObj.init();
+
     shader.init(
         glakReadShaderFile("shaders\\vshader.glsl"), 
         glakReadShaderFile("shaders\\fshader.glsl"));
 
     glEnable(GL_DEPTH_TEST);
 
-    vtxObj.init();
+    obj.buff.init();
 
-    glBindBuffer(GL_ARRAY_BUFFER, vtxObj.vtxBuff);
-    // glBufferData(GL_ARRAY_BUFFER, points.size()*sizeof(points4), NULL, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, vtxObj.colBuff);
-    // glBufferData(GL_ARRAY_BUFFER, points.size()*sizeof(points4), NULL, GL_STATIC_DRAW);
+    obj.shader.resize(1);
+    obj.shader[0] = shader;
 
-    // GLuint vPosition = glGetAttribLocation(shader, "vPosition");
-    // glEnableVertexAttribArray(vPosition);
-    // glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, 0);
+    obj.vertex.resize(4);
+    obj.vertex[0].pos = {-0.7f, -0.7f, 0.0f, 1.0f};
+    obj.vertex[1].pos = {-0.7f,  0.7f, 0.0f, 1.0f};
+    obj.vertex[2].pos = { 0.7f,  0.7f, 0.0f, 1.0f};
+    obj.vertex[3].pos = { 0.7f, -0.7f, 0.0f, 1.0f};
+
+    obj.vertex[0].col = {1.0f, 0.0f, 0.0f, 1.0f};
+    obj.vertex[1].col = {0.0f, 1.0f, 0.0f, 1.0f};
+    obj.vertex[2].col = {0.0f, 0.0f, 1.0f, 1.0f};
+    obj.vertex[3].col = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    obj.polygon.resize(2);
+    obj.polygon[0] = {{0, 1, 2}, 0};
+    obj.polygon[1] = {{0, 2, 3}, 0};
 
     // ImGui
     ImGui::CreateContext();
