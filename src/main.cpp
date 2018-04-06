@@ -16,8 +16,8 @@ void loop()
     if(ImGui::Begin("OpenGL Demo", &mainOpen, ImGuiWindowFlags_MenuBar))
     {
         glakCredits();
-        ImGui::End();
     }
+    ImGui::End();
 }
 
 void draw()
