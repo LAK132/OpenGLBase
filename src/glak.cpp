@@ -242,9 +242,9 @@ DEALINGS IN THE SOFTWARE.
         ImGui::Text("https://github.com/skaslev/gl3w");
         ImGui::TreePop();
     }
-    if(ImGui::TreeNode("GLFW3"))
+    if(ImGui::TreeNode("SDL2"))
     {
-        ImGui::Text("http://www.glfw.org/");
+        ImGui::Text("https://www.libsdl.org/");
         ImGui::TreePop();
     }
     if(ImGui::TreeNode("Miniz"))
