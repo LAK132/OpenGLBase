@@ -10,13 +10,30 @@ ImGuiIO* io = nullptr;
 
 void loop()
 {
-    static bool mainOpen = true;
-    ImGui::SetNextWindowSize(ImVec2(550,680), ImGuiCond_FirstUseEver);
-    if(ImGui::Begin("OpenGL Demo", &mainOpen, ImGuiWindowFlags_MenuBar))
+    static bool rightMenuOpen = true;
+    if(!io->WantCaptureMouse)
     {
-        glakCredits();
+        if(io->MouseClicked[1])
+        {
+            cout << "Mouse 1 clicked" << endl;
+            rightMenuOpen = !rightMenuOpen;
+        }
     }
-    ImGui::End();
+    if(!io->WantCaptureKeyboard)
+    {
+
+    }
+
+    if(rightMenuOpen)
+    {
+        ImGui::SetNextWindowPos(io->MouseClickedPos[1], ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(550,680), ImGuiCond_FirstUseEver);
+        if(ImGui::Begin("Right Click Menu", &rightMenuOpen, ImGuiWindowFlags_MenuBar))
+        {
+            glakCredits();
+        }
+        ImGui::End();
+    }
 }
 
 void draw()
