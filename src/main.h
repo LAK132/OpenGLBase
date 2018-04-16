@@ -2,14 +2,16 @@
 #include <vector>
 using std::vector;
 #include "glak.h"
-#include "imgui_impl_glfw_gl3.h"
+#include "imgui_impl_sdl_gl3.h"
 
 #define APP_NAME "OpenGL Application"
+#define SDL_MAIN_HANDLED
 
 #ifndef MAIN_H
 #define MAIN_H
 
-extern GLFWwindow* window;
+extern SDL_Window* window;
+extern SDL_GLContext glContext;
 extern float clearCol[4];
 extern glakShader shader;
 extern glakBuffer vtxObj;
