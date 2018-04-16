@@ -15,7 +15,7 @@ using std::vector;
 #include <stddef.h>
 #include <imgui.h>
 #include <GL\gl3w.h>
-#include <GLFW\glfw3.h>
+#include <SDL.h>
 #include <glm\vec2.hpp>
 #include <glm\vec3.hpp>
 #include <glm\vec4.hpp>
