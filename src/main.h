@@ -19,7 +19,7 @@ extern ImGuiIO* io;
 
 void init();
 void draw();
-void loop(SDL_Event* event);
+void loop();
 void destroy();
 
 #endif

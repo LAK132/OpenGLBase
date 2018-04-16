@@ -8,18 +8,8 @@ glakBuffer vtxObj;
 glakObject obj;
 ImGuiIO* io = nullptr;
 
-void loop(SDL_Event* event)
+void loop()
 {
-    switch(event->type)
-    {
-        default: break;
-    }
-}
-
-void draw()
-{
-    obj.draw();
-
     static bool mainOpen = true;
     ImGui::SetNextWindowSize(ImVec2(550,680), ImGuiCond_FirstUseEver);
     if(ImGui::Begin("OpenGL Demo", &mainOpen, ImGuiWindowFlags_MenuBar))
@@ -27,6 +17,11 @@ void draw()
         glakCredits();
     }
     ImGui::End();
+}
+
+void draw()
+{
+    obj.draw();
 }
 
 void init()
@@ -62,7 +57,6 @@ void init()
 
 void destroy()
 {
-
 }
 
 int main(int argc, char** argv)
@@ -107,11 +101,11 @@ int main(int argc, char** argv)
         {
             ImGui_ImplSdlGL3_ProcessEvent(&event);
             if (event.type == SDL_QUIT) done = true;
-            loop(&event);
         }
-
         ImGui_ImplSdlGL3_NewFrame(window);
         
+        loop();
+
         glViewport(0, 0, (int)io->DisplaySize.x, (int)io->DisplaySize.y);
         glClearColor(clearCol[0], clearCol[1], clearCol[2], clearCol[3]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
