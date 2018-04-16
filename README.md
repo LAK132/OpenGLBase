@@ -7,6 +7,6 @@ Base for C++ OpenGL Apps
 [SDL2](https://www.libsdl.org/download-2.0.php)
 
 # Included
-[dear-imgui SDL3/gl3w implementation](https://github.com/ocornut/imgui/tree/master/examples/sdl_opengl3_example)
+[dear-imgui SDL2/gl3w implementation](https://github.com/ocornut/imgui/tree/master/examples/sdl_opengl3_example)
 
 [gl3w](https://github.com/skaslev/gl3w)
