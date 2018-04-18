@@ -14,11 +14,11 @@ using std::make_shared;
 using std::vector;
 #include <stddef.h>
 #include <imgui.h>
-#include <GL\gl3w.h>
+#include <GL/gl3w.h>
 #include <SDL.h>
-#include <glm\vec2.hpp>
-#include <glm\vec3.hpp>
-#include <glm\vec4.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 // Implement DQ transforms http://simonstechblog.blogspot.com.au/2011/11/dual-quaternion.html
 //http://www.chinedufn.com/dual-quaternion-shader-explained/

@@ -5,6 +5,7 @@ void glakReadShaderFile(const string& src, string& dst)
     FILE* ptr = fopen(src.c_str(), "r");
     if(ptr == NULL) 
     {
+        cout << "Failed to open file " << src.c_str() << endl;
         dst = "";
         return;
     }
@@ -29,7 +30,7 @@ void glakInitShader(GLuint program, const string& shaderstr, GLenum type)
     if(shaderstr == "")
     {
         cout << "Error reading shader " << shaderstr.c_str() << endl;
-        throw exception("Error reading shader");
+        throw exception();//"Error reading shader");
     }
     GLuint shader = glCreateShader(type);
     GLchar* shadercstr = (GLchar*)&(shaderstr[0]);
@@ -45,7 +46,7 @@ void glakInitShader(GLuint program, const string& shaderstr, GLenum type)
         string msg; msg.resize(msgSize);
         glGetShaderInfoLog(shader, msgSize, NULL, &(msg[0]));
         cout << msg.c_str() << endl;
-        throw exception(msg.c_str());
+        throw exception();//msg.c_str());
     }
     glAttachShader(program, shader);
 }
@@ -63,7 +64,7 @@ void glakLinkProgram(GLuint program)
         string msg; msg.resize(msgSize);
         glGetProgramInfoLog(program, msgSize, NULL, &(msg[0]));
         cout << msg.c_str() << endl;
-        throw exception(msg.c_str());
+        throw exception();//msg.c_str());
     }
 }
 
@@ -242,10 +243,5 @@ DEALINGS IN THE SOFTWARE.
         ImGui::Text("https://www.libsdl.org/");
         ImGui::TreePop();
     }
-    // if(ImGui::TreeNode("Miniz"))
-    // {
-    //     ImGui::Text("https://github.com/richgel999/miniz");
-    //     ImGui::TreePop();
-    // }
     ImGui::PopID();
 }
