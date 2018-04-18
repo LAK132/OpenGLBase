@@ -20,6 +20,9 @@ using std::vector;
 #include <glm\vec3.hpp>
 #include <glm\vec4.hpp>
 
+// Implement DQ transforms http://simonstechblog.blogspot.com.au/2011/11/dual-quaternion.html
+//http://www.chinedufn.com/dual-quaternion-shader-explained/
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -49,6 +52,7 @@ string glakReadShaderFile(const string& src);
 void glakReadShaderFile(const string& src, string& dst);
 void glakInitShader(GLuint program, const string& filedir, GLenum type);
 void glakLinkProgram(GLuint program);
+void glakDrawObject(glakBuffer* buffer, vector<glakVertex>* vertex, vector<glakPolygon>* polygon, vector<glakShader>* shader);
 
 struct glakVertex
 {
@@ -58,16 +62,14 @@ struct glakVertex
     glakVec2 coord;
 };
 
+#define GLAK_VERTEX_ATTRIB_CONSTS(P, X, E) static const GLintptr X ## Off = offsetof(P, P ## :: ## X); static const size_t X ## Size = E;
+
 struct glakVertexConst
 {
-    static const size_t posSize = sizeof(glakVertex::pos) / sizeof(glakVertex::pos.x);
-    static const size_t colSize = sizeof(glakVertex::col) / sizeof(glakVertex::col.x);
-    static const size_t normSize = sizeof(glakVertex::norm) / sizeof(glakVertex::norm.x);
-    static const size_t coordSize = sizeof(glakVertex::coord) / sizeof(glakVertex::coord.x);
-    static const GLintptr posOff = offsetof(glakVertex, glakVertex::pos);
-    static const GLintptr colOff = offsetof(glakVertex, glakVertex::col);
-    static const GLintptr normOff = offsetof(glakVertex, glakVertex::norm);
-    static const GLintptr coordOff = offsetof(glakVertex, glakVertex::coord);
+    GLAK_VERTEX_ATTRIB_CONSTS(glakVertex, pos,      sizeof(glakVertex::pos) / sizeof(glakVertex::pos.x))        // posSize, posOff
+    GLAK_VERTEX_ATTRIB_CONSTS(glakVertex, col,      sizeof(glakVertex::col) / sizeof(glakVertex::col.x))        // colSize, colOff
+    GLAK_VERTEX_ATTRIB_CONSTS(glakVertex, norm,     sizeof(glakVertex::norm) / sizeof(glakVertex::norm.x))      // normSize, normOff
+    GLAK_VERTEX_ATTRIB_CONSTS(glakVertex, coord,    sizeof(glakVertex::coord) / sizeof(glakVertex::coord.x))    // coordSize, coordOff
 };
 
 struct glakShader
