@@ -61,14 +61,14 @@ struct glakVertex
     glakVec2 coord;
 };
 
-#define GLAK_VERTEX_ATTRIB_CONSTS(P, X, E) static const GLintptr X ## Off = offsetof(P, P ## :: ## X); static const size_t X ## Size = E;
+#define GLAK_VERTEX_ATTRIB_CONSTS(X, E) static const GLintptr X ## Off = offsetof(glakVertex, glakVertex:: ## X); static const size_t X ## Size = E;
 
 struct glakVertexConst
 {
-    GLAK_VERTEX_ATTRIB_CONSTS(glakVertex, pos,      sizeof(glakVertex::pos) / sizeof(glakVertex::pos.x))        // posSize, posOff
-    GLAK_VERTEX_ATTRIB_CONSTS(glakVertex, col,      sizeof(glakVertex::col) / sizeof(glakVertex::col.x))        // colSize, colOff
-    GLAK_VERTEX_ATTRIB_CONSTS(glakVertex, norm,     sizeof(glakVertex::norm) / sizeof(glakVertex::norm.x))      // normSize, normOff
-    GLAK_VERTEX_ATTRIB_CONSTS(glakVertex, coord,    sizeof(glakVertex::coord) / sizeof(glakVertex::coord.x))    // coordSize, coordOff
+    GLAK_VERTEX_ATTRIB_CONSTS(pos,      sizeof(glakVertex::pos) / sizeof(glakVertex::pos.x))        // posSize, posOff
+    GLAK_VERTEX_ATTRIB_CONSTS(col,      sizeof(glakVertex::col) / sizeof(glakVertex::col.x))        // colSize, colOff
+    GLAK_VERTEX_ATTRIB_CONSTS(norm,     sizeof(glakVertex::norm) / sizeof(glakVertex::norm.x))      // normSize, normOff
+    GLAK_VERTEX_ATTRIB_CONSTS(coord,    sizeof(glakVertex::coord) / sizeof(glakVertex::coord.x))    // coordSize, coordOff
 };
 
 struct glakShader
