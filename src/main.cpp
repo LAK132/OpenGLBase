@@ -46,8 +46,8 @@ void init()
     vtxObj.init();
 
     shader.init(
-        glakReadShaderFile("shaders\\vshader.glsl"), 
-        glakReadShaderFile("shaders\\fshader.glsl"));
+        glakReadShaderFile("shaders/vshader.glsl"), 
+        glakReadShaderFile("shaders/fshader.glsl"));
 
     glEnable(GL_DEPTH_TEST);
 

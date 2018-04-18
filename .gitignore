@@ -1,5 +1,6 @@
-bin/*.obj
+bin/*
 include/glm
+out/*
 *.exe
 *.dll
 *.lib
