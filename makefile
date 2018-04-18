@@ -1,23 +1,34 @@
-app: bin/imgui.o bin/imgui_draw.o bin/imgui_impl_sdl_gl3.o bin/gl3w.o bin/defines.o bin/glak.o bin/main.o
-	g++ -o out/app bin/imgui.o bin/imgui_draw.o bin/imgui_impl_sdl_gl3.o bin/gl3w.o bin/defines.o bin/glak.o bin/main.o -ldl -lSDL2
+CC = g++
 
-bin/imgui_draw.o: ../imgui/imgui_draw.cpp
-	g++ -c -o bin/imgui_draw.o ../imgui/imgui_draw.cpp -I.
+LIB = -ldl -lSDL2
+BIN = bin
+OUT = out
 
-bin/imgui.o: ../imgui/imgui.cpp ../imgui/imgui_draw.cpp
-	g++ -c -o bin/imgui.o ../imgui/imgui.cpp -I.
+imgui_SRC = ../imgui
+imgui_OBJ = imgui.cpp imgui_draw.cpp
+imgui_INC = 
 
-bin/imgui_impl_sdl_gl3.o: lib/imgui_impl_sdl_gl3.cpp
-	g++ -c -o bin/imgui_impl_sdl_gl3.o lib/imgui_impl_sdl_gl3.cpp -I/usr/include/SDL2 -Iinclude -I../imgui
+libs_SRC = lib
+libs_OBJ = gl3w.c imgui_impl_sdl_gl3.cpp
+libs_INC = -Iinclude -I/usr/include/SDL2 -I../imgui
 
-bin/gl3w.o: lib/gl3w.c
-	g++ -c -o bin/gl3w.o lib/gl3w.c -Iinclude
+main_SRC = src
+main_OBJ = defines.cpp glak.cpp main.cpp
+main_INC = -Iinclude -Iinclude/SDL -I../imgui
 
-bin/defines.o: src/defines.cpp
-	g++ -c -o bin/defines.o src/defines.cpp -Iinclude
+programs = main imgui libs
 
-bin/glak.o: src/glak.cpp
-	g++ -std=c++11 -c -o bin/glak.o src/glak.cpp -Iinclude -Iinclude/SDL -I../imgui
+ALL_OBJ = $(foreach prog,$(programs),$(foreach obj,$($(prog)_OBJ),$(BIN)/$(obj).o))
 
-bin/main.o: src/main.cpp
-	g++ -std=c++11 -c -o bin/main.o src/main.cpp -Iinclude -Iinclude/SDL -I../imgui
+all: $(ALL_OBJ)
+	g++ -o $(OUT)/app $(ALL_OBJ) $(LIB)
+
+define COMPILE_TEMPLATE =
+$(2)/$(3).o: $(1)/$(3)
+	$(CC) -c -o $(2)/$(3).o $(1)/$(3) $(4)
+endef
+
+$(foreach prog,$(programs),$(foreach obj,$($(prog)_OBJ),$(eval $(call COMPILE_TEMPLATE,$($(prog)_SRC),$(BIN),$(obj),$($(prog)_INC)))))
+
+clean:
+	rm -f $(ALL_OBJ)
