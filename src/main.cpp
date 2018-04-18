@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     ImGui_ImplSdlGL3_Init(window);
     ImGui::StyleColorsDark();
 
-    try{init();}catch(exception e){cout << "Error in init\n";}
+    init();
 
     bool done = false;
     while(!done)
@@ -121,13 +121,13 @@ int main(int argc, char** argv)
         }
         ImGui_ImplSdlGL3_NewFrame(window);
         
-        try{loop();}catch(exception e){cout << "Error in loop\n";}
+        loop();
 
         glViewport(0, 0, (int)io->DisplaySize.x, (int)io->DisplaySize.y);
         glClearColor(clearCol[0], clearCol[1], clearCol[2], clearCol[3]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        try{draw();}catch(exception e){cout << "Error in draw\n";}
+        draw();
 
         ImGui::Render();
         ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
         SDL_GL_SwapWindow(window);
     }
 
-    try{destroy();}catch(exception e){cout << "Error in destroy\n";}
+    destroy();
     
     ImGui_ImplSdlGL3_Shutdown();
     ImGui::DestroyContext();
