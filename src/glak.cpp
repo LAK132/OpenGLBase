@@ -72,7 +72,7 @@ void glakDrawObject(glakBuffer* buffer, vector<glakVertex>* vertex, vector<glakP
 {
     glBindVertexArray(buffer->vtxArr);
     glBindBuffer(GL_ARRAY_BUFFER, buffer->vtxBuff);
-    glBufferData(GL_ARRAY_BUFFER, vertex->size() * sizeof(glakVertex), &(vertex[0]), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertex->size() * sizeof(glakVertex), &((*vertex)[0]), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->idxBuff);
 
@@ -117,10 +117,10 @@ void glakShader::init(const string& vshader, const string& fshader)
     glakInitShader(*program, fshader, GL_FRAGMENT_SHADER);
     glLinkProgram(*program);
 
-    position = glGetAttribLocation(*program, "vPosition");
-    normal = glGetAttribLocation(*program, "vNormal");
-    color = glGetAttribLocation(*program, "vColor");
-    texCoord = glGetAttribLocation(*program, "vTexCoord");
+    position =  glGetAttribLocation(*program, "vPosition");
+    normal =    glGetAttribLocation(*program, "vNormal");
+    color =     glGetAttribLocation(*program, "vColor");
+    texCoord =  glGetAttribLocation(*program, "vTexCoord");
 }
 
 #define GLAK_ENABLE_ATTRIB(N, S, T, NO, PS, O) if(N >= 0) {glEnableVertexAttribArray(N); glVertexAttribPointer(N, S, T, NO, PS, (GLvoid*)O);}
