@@ -27,8 +27,8 @@ void loop()
     if(rightMenuOpen)
     {
         ImGui::SetNextWindowPos(io->MouseClickedPos[1], ImGuiCond_Appearing);
-        ImGui::SetNextWindowSize(ImVec2(550,680), ImGuiCond_FirstUseEver);
-        if(ImGui::Begin("Right Click Menu", &rightMenuOpen, ImGuiWindowFlags_MenuBar))
+        //ImGui::SetNextWindowSize(ImVec2(550,680), ImGuiCond_FirstUseEver);
+        if(ImGui::Begin("Right Click Menu", &rightMenuOpen, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_AlwaysAutoResize))
         {
             glakCredits();
         }
@@ -46,8 +46,8 @@ void init()
     vtxObj.init();
 
     shader.init(
-        glakReadShaderFile("shaders\\vshader.glsl"), 
-        glakReadShaderFile("shaders\\fshader.glsl"));
+        glakReadShaderFile("shaders/vshader.glsl"), 
+        glakReadShaderFile("shaders/fshader.glsl"));
 
     glEnable(GL_DEPTH_TEST);
 
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     ImGui_ImplSdlGL3_Init(window);
     ImGui::StyleColorsDark();
 
-    init();
+    try{init();}catch(exception e){cout << "Error in init\n";}
 
     bool done = false;
     while(!done)
@@ -121,13 +121,13 @@ int main(int argc, char** argv)
         }
         ImGui_ImplSdlGL3_NewFrame(window);
         
-        loop();
+        try{loop();}catch(exception e){cout << "Error in loop\n";}
 
         glViewport(0, 0, (int)io->DisplaySize.x, (int)io->DisplaySize.y);
         glClearColor(clearCol[0], clearCol[1], clearCol[2], clearCol[3]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        draw();
+        try{draw();}catch(exception e){cout << "Error in draw\n";}
 
         ImGui::Render();
         ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
         SDL_GL_SwapWindow(window);
     }
 
-    destroy();
+    try{destroy();}catch(exception e){cout << "Error in destroy\n";}
     
     ImGui_ImplSdlGL3_Shutdown();
     ImGui::DestroyContext();
