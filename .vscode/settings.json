@@ -4,6 +4,8 @@
         "xstring": "cpp",
         "ostream": "cpp",
         "vector": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "stdexcept": "cpp",
+        "exception": "cpp"
     }
 }

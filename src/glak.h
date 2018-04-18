@@ -14,11 +14,11 @@ using std::make_shared;
 using std::vector;
 #include <stddef.h>
 #include <imgui.h>
-#include <GL\gl3w.h>
+#include <GL/gl3w.h>
 #include <SDL.h>
-#include <glm\vec2.hpp>
-#include <glm\vec3.hpp>
-#include <glm\vec4.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
