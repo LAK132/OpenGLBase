@@ -61,7 +61,7 @@ struct glakVertex
     glakVec2 coord;
 };
 
-#define GLAK_VERTEX_ATTRIB_CONSTS(X, E) static const GLintptr X ## Off = offsetof(glakVertex, glakVertex:: ## X); static const size_t X ## Size = E;
+#define GLAK_VERTEX_ATTRIB_CONSTS(X, E) static const GLintptr X ## Off = offsetof(glakVertex, glakVertex::X); static const size_t X ## Size = E;
 
 struct glakVertexConst
 {
