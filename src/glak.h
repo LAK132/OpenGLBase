@@ -52,7 +52,6 @@ string glakReadShaderFile(const string& src);
 void glakReadShaderFile(const string& src, string& dst);
 void glakInitShader(GLuint program, const string& filedir, GLenum type);
 void glakLinkProgram(GLuint program);
-void glakDrawObject(glakBuffer* buffer, vector<glakVertex>* vertex, vector<glakPolygon>* polygon, vector<glakShader>* shader);
 
 struct glakVertex
 {
@@ -111,6 +110,7 @@ struct glakObject
     void draw();
 };
 
+void glakDrawObject(glakBuffer* buffer, vector<glakVertex>* vertex, vector<glakPolygon>* polygon, vector<glakShader>* shader);
 void glakCredits();
 
 #endif
