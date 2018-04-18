@@ -67,6 +67,33 @@ void glakLinkProgram(GLuint program)
     }
 }
 
+void glakDrawObject(glakBuffer* buffer, vector<glakVertex>* vertex, vector<glakPolygon>* polygon, vector<glakShader>* shader)
+{
+    glBindVertexArray(buffer->vtxArr);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer->vtxBuff);
+    glBufferData(GL_ARRAY_BUFFER, vertex->size() * sizeof(glakVertex), &(vertex[0]), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->idxBuff);
+
+    glakShader* prev = nullptr;
+    for(auto it = polygon->begin(); it != polygon->end(); it++)
+    {
+        if(it->material > shader->size()) continue;
+        glakShader& sh = (*shader)[it->material];
+
+        if(prev != &sh)
+        {
+            if(prev != nullptr) prev->disable();
+            prev = &sh;
+            sh.enable();
+        }
+
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(it->index), &(it->index[0]), GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, sizeof(it->index), GL_UNSIGNED_SHORT, NULL);
+    }
+    if(prev != nullptr) prev->disable();
+}
+
 glakShader::glakShader(){}
 
 glakShader::glakShader(const glakShader& other)
@@ -95,32 +122,17 @@ void glakShader::init(const string& vshader, const string& fshader)
     texCoord = glGetAttribLocation(*program, "vTexCoord");
 }
 
+#define GLAK_ENABLE_ATTRIB(N, S, T, NO, PS, O) if(N >= 0) {glEnableVertexAttribArray(N); glVertexAttribPointer(N, S, T, NO, PS, (GLvoid*)O);}
+
 void glakShader::enable()
 {
     glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
     if (program.use_count() <= 0) return;
-    // if (program.use_count() <= 0) throw exception("No program");
     glUseProgram(*program);
-    if (position >= 0)
-    {
-        glEnableVertexAttribArray(position);
-        glVertexAttribPointer(position, glakVertexConst::posSize, GL_FLOAT, GL_FALSE, sizeof(glakVertex), (GLvoid*)glakVertexConst::posOff);
-    } //else cout << "position = " << position << endl;
-    if (color >= 0)
-    {
-        glEnableVertexAttribArray(color);
-        glVertexAttribPointer(color, glakVertexConst::colSize, GL_FLOAT, GL_FALSE, sizeof(glakVertex), (GLvoid*)glakVertexConst::colOff);
-    } //else cout << "color = " << color << endl;
-    if (normal >= 0)
-    {
-        glEnableVertexAttribArray(normal);
-        glVertexAttribPointer(normal, glakVertexConst::normSize, GL_FLOAT, GL_TRUE, sizeof(glakVertex), (GLvoid*)glakVertexConst::normOff);
-    } //else cout << "normal = " << normal << endl;
-    if (texCoord >= 0)
-    {
-        glEnableVertexAttribArray(texCoord);
-        glVertexAttribPointer(texCoord, glakVertexConst::coordSize, GL_FLOAT, GL_FALSE, sizeof(glakVertex), (GLvoid*)glakVertexConst::coordOff);
-    } //else cout << "texCoord = " << texCoord << endl;
+    GLAK_ENABLE_ATTRIB(position,    glakVertexConst::posSize,   GL_FLOAT, GL_FALSE, sizeof(glakVertex), glakVertexConst::posOff)
+    GLAK_ENABLE_ATTRIB(color,       glakVertexConst::colSize,   GL_FLOAT, GL_FALSE, sizeof(glakVertex), glakVertexConst::colOff)
+    GLAK_ENABLE_ATTRIB(normal,      glakVertexConst::normSize,  GL_FLOAT, GL_FALSE, sizeof(glakVertex), glakVertexConst::normOff)
+    GLAK_ENABLE_ATTRIB(texCoord,    glakVertexConst::coordSize, GL_FLOAT, GL_FALSE, sizeof(glakVertex), glakVertexConst::coordOff)
 }
 
 void glakShader::disable()
@@ -156,24 +168,7 @@ glakBuffer::~glakBuffer()
 
 void glakObject::draw()
 {
-    glBindVertexArray(buff.vtxArr);
-    glBindBuffer(GL_ARRAY_BUFFER, buff.vtxBuff);
-    glBufferData(GL_ARRAY_BUFFER, vertex.size() * sizeof(glakVertex), &(vertex[0]), GL_STATIC_DRAW);
-    
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buff.idxBuff);
-
-    for(auto it = polygon.begin(); it != polygon.end(); it++)
-    {
-        if (it->material > shader.size()) continue;
-        glakShader& sh = shader[it->material];
-
-        sh.enable();
-
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(it->index), &(it->index[0]), GL_STATIC_DRAW);
-        glDrawElements(GL_TRIANGLES, sizeof(it->index), GL_UNSIGNED_SHORT, NULL);
-
-        sh.disable();
-    }
+    glakDrawObject(&buff, &vertex, &polygon, &shader);
 }
 
 void glakCredits()
@@ -247,10 +242,10 @@ DEALINGS IN THE SOFTWARE.
         ImGui::Text("https://www.libsdl.org/");
         ImGui::TreePop();
     }
-    if(ImGui::TreeNode("Miniz"))
-    {
-        ImGui::Text("https://github.com/richgel999/miniz");
-        ImGui::TreePop();
-    }
+    // if(ImGui::TreeNode("Miniz"))
+    // {
+    //     ImGui::Text("https://github.com/richgel999/miniz");
+    //     ImGui::TreePop();
+    // }
     ImGui::PopID();
 }

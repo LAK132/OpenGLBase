@@ -7,10 +7,11 @@ glakShader shader;
 glakBuffer vtxObj;
 glakObject obj;
 ImGuiIO* io = nullptr;
+ImGuiStyle* style = nullptr;
 
 void loop()
 {
-    static bool rightMenuOpen = true;
+    static bool rightMenuOpen = false;
     if(!io->WantCaptureMouse)
     {
         if(io->MouseClicked[1])
@@ -26,9 +27,8 @@ void loop()
 
     if(rightMenuOpen)
     {
-        ImGui::SetNextWindowPos(io->MouseClickedPos[1], ImGuiCond_Appearing);
-        ImGui::SetNextWindowSize(ImVec2(550,680), ImGuiCond_FirstUseEver);
-        if(ImGui::Begin("Right Click Menu", &rightMenuOpen, ImGuiWindowFlags_MenuBar))
+        ImGui::SetNextWindowPos(ImVec2(io->MouseClickedPos[1][0] - 2, io->MouseClickedPos[1][1] - 2), ImGuiCond_Appearing);
+        if(ImGui::Begin("Right Click Menu", &rightMenuOpen, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_AlwaysAutoResize))
         {
             glakCredits();
         }
@@ -107,6 +107,8 @@ int main(int argc, char** argv)
     io = &ImGui::GetIO();
     ImGui_ImplSdlGL3_Init(window);
     ImGui::StyleColorsDark();
+    style = &ImGui::GetStyle();
+    style->WindowRounding = 0;
 
     init();
 
