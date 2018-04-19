@@ -1,6 +1,6 @@
-CC = g++
+CC = g++ -std=c++11
 
-LIB = -ldl -lSDL2
+LIB = -ldl -lSDL2 /usr/local/lib/libassimp.a /usr/local/lib/libIrrXML.a /usr/local/lib/libzlibstatic.a
 BIN = bin
 OUT = out
 
@@ -14,12 +14,13 @@ libs_INC = -Iinclude -I/usr/include/SDL2 -I../imgui
 
 main_SRC = src
 main_OBJ = defines.cpp glak.cpp main.cpp
-main_INC = -Iinclude -Iinclude/SDL -I../imgui
+main_INC = -Iinclude -Iinclude/SDL -I/usr/local/include -I../imgui
 
 programs = main imgui libs
 
 ALL_OBJ = $(foreach prog,$(programs),$(foreach obj,$($(prog)_OBJ),$(BIN)/$(obj).o))
 
+.PHONY: all
 all: $(ALL_OBJ)
 	g++ -o $(OUT)/app $(ALL_OBJ) $(LIB)
 

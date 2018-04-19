@@ -19,6 +19,9 @@ using std::vector;
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 // Implement DQ transforms http://simonstechblog.blogspot.com.au/2011/11/dual-quaternion.html
 //http://www.chinedufn.com/dual-quaternion-shader-explained/
@@ -47,6 +50,8 @@ using std::vector;
 
 #ifndef GLAK_H
 #define GLAK_H
+
+extern Assimp::Importer modelImporter;
 
 string glakReadShaderFile(const string& src);
 void glakReadShaderFile(const string& src, string& dst);

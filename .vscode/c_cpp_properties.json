@@ -31,6 +31,7 @@
                 "include",
                 "include/SDL",
                 "../imgui",
+                "../assimp/include",
                 "${workspaceRoot}"
             ],
             "defines": [],
@@ -42,6 +43,7 @@
                     "include",
                     "include/SDL",
                     "../imgui",
+                    "../assimp/include",
                     "${workspaceRoot}"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
