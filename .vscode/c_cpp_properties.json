@@ -28,6 +28,9 @@
             "includePath": [
                 "/usr/include",
                 "/usr/local/include",
+                "include",
+                "include/SDL",
+                "../imgui",
                 "${workspaceRoot}"
             ],
             "defines": [],
@@ -36,11 +39,17 @@
                 "path": [
                     "/usr/include",
                     "/usr/local/include",
+                    "include",
+                    "include/SDL",
+                    "../imgui",
                     "${workspaceRoot}"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
-            }
+            },
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         },
         {
             "name": "Win32",
