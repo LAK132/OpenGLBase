@@ -1,3 +1,5 @@
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 #include "main.h"
 
 SDL_Window* window = nullptr;
@@ -8,9 +10,11 @@ glakBuffer vtxObj;
 glakObject obj;
 ImGuiIO* io = nullptr;
 ImGuiStyle* style = nullptr;
+chaiscript::ChaiScript chai;
 
 void loop()
 {
+    bool mainOpen = true;
     static bool rightMenuOpen = false;
     if(!io->WantCaptureMouse)
     {
@@ -24,6 +28,25 @@ void loop()
     {
 
     }
+
+    if(ImGui::Begin("OpenGL Application Base", &mainOpen, NULL))
+    {
+        static vector<char> script(10000);
+        if (strlen(&(script[0])) > script.size() / 2) script.resize(script.size()*2);
+        ImGui::InputTextMultiline("Script", &(script[0]), script.size());
+        if(ImGui::Button("Run"))
+        {
+            try
+            {
+                chai.eval(&(script[0]));
+            }
+            catch (const chaiscript::exception::eval_error& e)
+            {
+                cout << "Script Error\n" << e.pretty_print() << endl;
+            }
+        }
+    }
+    ImGui::End();
 
     if(rightMenuOpen)
     {
@@ -43,6 +66,7 @@ void draw()
 
 void init()
 {
+
     vtxObj.init();
 
     shader.init(R"(
@@ -73,25 +97,58 @@ void main()
 
     glEnable(GL_DEPTH_TEST);
 
-    obj.buff.init();
-
     obj.shader.resize(1);
     obj.shader[0] = shader;
 
-    obj.vertex.resize(4);
-    obj.vertex[0].pos = {-0.7f, -0.7f, 0.0f, 1.0f};
-    obj.vertex[1].pos = {-0.7f,  0.7f, 0.0f, 1.0f};
-    obj.vertex[2].pos = { 0.7f,  0.7f, 0.0f, 1.0f};
-    obj.vertex[3].pos = { 0.7f, -0.7f, 0.0f, 1.0f};
+    obj.mesh.resize(1);
+    obj.mesh[0].material = 0;
 
-    obj.vertex[0].col = {1.0f, 0.0f, 0.0f, 1.0f};
-    obj.vertex[1].col = {0.0f, 1.0f, 0.0f, 1.0f};
-    obj.vertex[2].col = {0.0f, 0.0f, 1.0f, 1.0f};
-    obj.vertex[3].col = {1.0f, 1.0f, 1.0f, 1.0f};
+    tinyobj::attrib_t attrib;
+    vector<tinyobj::shape_t> shape;
+    vector<tinyobj::material_t> material;
+    string loaderror;
+    ifstream objfile;
+    const char* objdir = "teapot.obj";
+    objfile.open(objdir);
+    if (objfile.is_open())
+    {
+        tinyobj::LoadObj(&attrib, &shape, &material, &loaderror, (istream*)&objfile);
+        objfile.close();
 
-    obj.polygon.resize(2);
-    obj.polygon[0] = {{0, 1, 2}, 0};
-    obj.polygon[1] = {{0, 2, 3}, 0};
+        obj.mesh[0].vertex.resize(attrib.vertices.size()/3);
+        for(size_t i = 0, j = 0; i < obj.mesh[0].vertex.size(); i++)
+        {
+            obj.mesh[0].vertex[i].pos.x = attrib.vertices[j++]/10.0f;
+            obj.mesh[0].vertex[i].pos.y = attrib.vertices[j++]/10.0f;
+            obj.mesh[0].vertex[i].pos.z = attrib.vertices[j++]/10.0f;
+        }
+
+        obj.mesh[0].index.resize(shape[0].mesh.indices.size());
+        for(size_t i = 0; i < obj.mesh[0].index.size(); i++)
+        {
+            obj.mesh[0].index[i] = shape[0].mesh.indices[i].vertex_index;
+        }
+    }
+    else
+    {
+        cout << "Error opening OBJ file " << objdir << endl;
+
+        obj.mesh[0].vertex.resize(4);
+        obj.mesh[0].vertex[0].pos = {-0.7f, -0.7f, 0.0f};//, 1.0f};
+        obj.mesh[0].vertex[1].pos = {-0.7f,  0.7f, 0.0f};//, 1.0f};
+        obj.mesh[0].vertex[2].pos = { 0.7f,  0.7f, 0.0f};//, 1.0f};
+        obj.mesh[0].vertex[3].pos = { 0.7f, -0.7f, 0.0f};//, 1.0f};
+
+        obj.mesh[0].vertex[0].col = {1.0f, 0.0f, 0.0f, 1.0f};
+        obj.mesh[0].vertex[1].col = {0.0f, 1.0f, 0.0f, 1.0f};
+        obj.mesh[0].vertex[2].col = {0.0f, 0.0f, 1.0f, 1.0f};
+        obj.mesh[0].vertex[3].col = {1.0f, 1.0f, 1.0f, 1.0f};
+
+        obj.mesh[0].index.resize(6);
+        obj.mesh[0].index = {0, 1, 2, 0, 2, 3};
+    }
+
+    obj.updateBuffer();
 }
 
 void destroy()

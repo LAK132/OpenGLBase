@@ -4,6 +4,17 @@
         "xstring": "cpp",
         "ostream": "cpp",
         "vector": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "deque": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "initializer_list": "cpp",
+        "regex": "cpp",
+        "xhash": "cpp",
+        "xtree": "cpp",
+        "xutility": "cpp",
+        "bitset": "cpp",
+        "stack": "cpp",
+        "type_traits": "cpp"
     }
 }
