@@ -1,7 +1,5 @@
 #include "glak.h"
 
-Assimp::Importer modelImporter;
-
 void glakReadShaderFile(const string& src, string& dst)
 {
     FILE* ptr = fopen(src.c_str(), "r");
