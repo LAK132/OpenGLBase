@@ -1,5 +1,4 @@
 bin/*
-include/glm
 out/*
 *.exe
 *.dll
