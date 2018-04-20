@@ -1,6 +1,6 @@
 #include "glak.h"
 
-void glakReadShaderFile(const string& src, string& dst)
+void glakReadFile(const string& src, string& dst)
 {
     FILE* ptr = fopen(src.c_str(), "r");
     if(ptr == NULL) 
@@ -18,10 +18,10 @@ void glakReadShaderFile(const string& src, string& dst)
     fclose(ptr);
 }
 
-string glakReadShaderFile(const string& src)
+string glakReadFile(const string& src)
 {
     string rtn = "";
-    glakReadShaderFile(src, rtn);
+    glakReadFile(src, rtn);
     return rtn;
 }
 
@@ -66,33 +66,6 @@ void glakLinkProgram(GLuint program)
         cout << msg.c_str() << endl;
         throw exception();//msg.c_str());
     }
-}
-
-void glakDrawObject(glakBuffer* buffer, vector<glakVertex>* vertex, vector<glakPolygon>* polygon, vector<glakShader>* shader)
-{
-    glBindVertexArray(buffer->vtxArr);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer->vtxBuff);
-    glBufferData(GL_ARRAY_BUFFER, vertex->size() * sizeof(glakVertex), &((*vertex)[0]), GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->idxBuff);
-
-    glakShader* prev = nullptr;
-    for(auto it = polygon->begin(); it != polygon->end(); it++)
-    {
-        if(it->material > shader->size()) continue;
-        glakShader& sh = (*shader)[it->material];
-
-        if(prev != &sh)
-        {
-            if(prev != nullptr) prev->disable();
-            prev = &sh;
-            sh.enable();
-        }
-
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(it->index), &(it->index[0]), GL_STATIC_DRAW);
-        glDrawElements(GL_TRIANGLES, sizeof(it->index), GL_UNSIGNED_SHORT, NULL);
-    }
-    if(prev != nullptr) prev->disable();
 }
 
 glakShader::glakShader(){}
@@ -167,9 +140,56 @@ glakBuffer::~glakBuffer()
     glDeleteVertexArrays(1, &vtxArr);
 }
 
+void glakMesh::updateBuffer()
+{
+    buffer.init();
+
+    glBindVertexArray(buffer.vtxArr);
+
+    vertex_count = vertex.size();
+    glBindBuffer(GL_ARRAY_BUFFER, buffer.vtxBuff);
+    glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(glakVertex), &(vertex[0]), GL_STATIC_DRAW);
+    
+    index_count = index.size();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.idxBuff);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(glakIndex), &(index[0]), GL_STATIC_DRAW);
+}
+
+void glakMesh::draw()//glakShader* shader)
+{
+    // if (shader == nullptr) return;
+    glBindVertexArray(buffer.vtxArr);
+    // shader->enable();
+    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, NULL);
+    // shader->disable();
+    glBindVertexArray(0);
+}
+
+void glakObject::updateBuffer()
+{
+    for(auto it = mesh.begin(); it != mesh.end(); it++)
+    {
+        it->updateBuffer();
+    }
+}
+
 void glakObject::draw()
 {
-    glakDrawObject(&buff, &vertex, &polygon, &shader);
+    glakShader* prev = nullptr;
+    for(auto it = mesh.begin(); it != mesh.end(); it++)
+    {
+        if (it->material < shader.size())
+        {
+            if (prev != &(shader[it->material]))
+            {
+                if(prev != nullptr) prev->disable();
+                prev = &(shader[it->material]);
+                prev->enable();
+            }
+            it->draw();
+        }
+    }
+    if(prev != nullptr) prev->disable();
 }
 
 void glakCredits()
@@ -177,8 +197,7 @@ void glakCredits()
     ImGui::PushID("Credits");
     if(ImGui::TreeNode("ImGui"))
     {
-        ImGui::Text(R"(
-https://github.com/ocornut/imgui
+        ImGui::Text(R"(https://github.com/ocornut/imgui
 
 The MIT License (MIT)
 
@@ -200,14 +219,12 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-        )");
+SOFTWARE.)");
         ImGui::TreePop();
     }
     if(ImGui::TreeNode("glm"))
     {
-        ImGui::Text(R"(
-https://github.com/g-truc/glm
+        ImGui::Text(R"(https://github.com/g-truc/glm
 
 The Happy Bunny License (Modified MIT License)
 
@@ -229,8 +246,69 @@ INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PA
 PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-        )");
+DEALINGS IN THE SOFTWARE.)");
+        ImGui::TreePop();
+    }
+    if(ImGui::TreeNode("ChaiScript"))
+    {
+        ImGui::Text(R"(https://github.com/ChaiScript/ChaiScript
+
+Copyright 2009-2016 Jason Turner
+Copyright 2009-2012 Jonathan Turner. 
+
+All Rights Reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+  * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+  * Redistributions in binary form must reproduce the above
+    copyright notice, this list of conditions and the following
+    disclaimer in the documentation and/or other materials provided
+    with the distribution.
+  * Neither the name of Jason Turner nor Jonathan Turner nor the 
+    name of contributors may be used to endorse or promote products derived
+    from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.)");
+        ImGui::TreePop();
+    }
+    if(ImGui::TreeNode("tinyobjloader"))
+    {
+        ImGui::Text(R"(https://github.com/syoyo/tinyobjloader
+
+The MIT License (MIT)
+
+Copyright (c) 2012-2016 Syoyo Fujita and many contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.)");
         ImGui::TreePop();
     }
     if(ImGui::TreeNode("gl3w"))

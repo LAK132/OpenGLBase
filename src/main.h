@@ -1,6 +1,11 @@
 #include <stdint.h>
+#include <iostream>
+using std::istream;
+#include <fstream>
+using std::ifstream;
 #include <vector>
 using std::vector;
+#include <chaiscript/chaiscript.hpp>
 #include "glak.h"
 #include "imgui_impl_sdl_gl3.h"
 
