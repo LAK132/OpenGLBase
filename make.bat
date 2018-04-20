@@ -4,15 +4,16 @@ SetLocal EnableDelayedExpansion
 set mode=%1
 set target=%2
 
+if not "%mode%"=="debug" if not "%mode%"=="release" if not "%mode%"=="clean" goto useage
+if not "%target%"=="x86" if not "%target%"=="x64" if not "%mode%"=="clean" goto useage
+
+call makelist.bat %target%
+
 if "%mode%"=="clean" goto clean
-if not "%mode%"=="debug" if not "%mode%"=="release" goto useage
-if not "%target%"=="x86" if not "%target%"=="x64" goto useage
 
 echo Compiling in %mode% mode for %target%
 
 title Compiler
-
-call makelist.bat %target%
 
 REM some windows functions are pedantic about \
 set OUTDIR=!OUTDIR!\%mode%\%target%

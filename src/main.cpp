@@ -45,9 +45,31 @@ void init()
 {
     vtxObj.init();
 
-    shader.init(
-        glakReadShaderFile("shaders/vshader.glsl"), 
-        glakReadShaderFile("shaders/fshader.glsl"));
+    shader.init(R"(
+#version 330 core
+
+in vec4 vPosition;
+in vec4 vNormal;
+in vec2 vTexCoord;
+in vec4 vColor;
+
+out vec4 fColor;
+
+void main()
+{
+    gl_Position = vPosition;
+    fColor = vColor;
+})",R"(
+#version 330 core
+
+in vec4 fColor;
+
+out vec4 pColor;
+
+void main() 
+{ 
+    pColor = fColor;
+})");
 
     glEnable(GL_DEPTH_TEST);
 
