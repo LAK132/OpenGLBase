@@ -4,7 +4,7 @@
 
 SDL_Window* window = nullptr;
 SDL_GLContext glContext;
-float clearCol[4] = {0.45f, 0.55f, 0.60f, 1.00f};
+float clearCol[4] = {0.0f, 0.3125f, 0.3125f, 1.00f};
 glakShader shader;
 glakBuffer vtxObj;
 glakObject obj;
