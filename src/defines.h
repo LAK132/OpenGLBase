@@ -1,7 +1,3 @@
-#ifdef USE_CHAISCRIPT
-#include <chaiscript/chaiscript.hpp>
-#endif
-
 #ifndef DEFINES_H
 #define DEFINES_H
 
