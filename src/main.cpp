@@ -32,23 +32,7 @@ void loop()
     ImGui::SetNextWindowSize(io->DisplaySize, ImGuiCond_Always);
     if(ImGui::Begin("OpenGL Application Base", &mainOpen, ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoCollapse|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoSavedSettings))
     {
-        #ifdef USE_CHAISCRIPT
-        static vector<char> script(10000);
-        if (strlen(&(script[0])) > script.size() / 2) script.resize(script.size()*2);
-        ImGui::InputTextMultiline("Script", &(script[0]), script.size());
-        if(ImGui::Button("Run"))
-        {
-            try
-            {
-                chaiscript::ChaiScript chai;
-                chai.eval(&(script[0]));
-            }
-            catch (const chaiscript::exception::eval_error& e)
-            {
-                cout << "Script Error\n" << e.pretty_print() << endl;
-            }
-        }
-        #endif
+        
     }
     ImGui::End();
 
