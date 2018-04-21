@@ -10,7 +10,6 @@ glakBuffer vtxObj;
 glakObject obj;
 ImGuiIO* io = nullptr;
 ImGuiStyle* style = nullptr;
-chaiscript::ChaiScript chai;
 
 void loop()
 {
@@ -29,8 +28,11 @@ void loop()
 
     }
 
-    if(ImGui::Begin("OpenGL Application Base", &mainOpen, NULL))
+    ImGui::SetNextWindowPos({0, 0}, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(io->DisplaySize, ImGuiCond_Always);
+    if(ImGui::Begin("OpenGL Application Base", &mainOpen, ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoCollapse|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoSavedSettings))
     {
+        #ifdef USE_CHAISCRIPT
         static vector<char> script(10000);
         if (strlen(&(script[0])) > script.size() / 2) script.resize(script.size()*2);
         ImGui::InputTextMultiline("Script", &(script[0]), script.size());
@@ -38,6 +40,7 @@ void loop()
         {
             try
             {
+                chaiscript::ChaiScript chai;
                 chai.eval(&(script[0]));
             }
             catch (const chaiscript::exception::eval_error& e)
@@ -45,6 +48,7 @@ void loop()
                 cout << "Script Error\n" << e.pretty_print() << endl;
             }
         }
+        #endif
     }
     ImGui::End();
 
@@ -201,7 +205,7 @@ int main(int argc, char** argv)
             if (event.type == SDL_QUIT) done = true;
         }
         ImGui_ImplSdlGL3_NewFrame(window);
-        
+
         loop();
 
         glViewport(0, 0, (int)io->DisplaySize.x, (int)io->DisplaySize.y);
