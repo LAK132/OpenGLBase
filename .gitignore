@@ -4,3 +4,4 @@ out/*
 *.pdb
 *.ilk
 *.dump
+imgui.ini

@@ -1,20 +1,20 @@
 CC = g++ -std=c++11
 
-LIB = -ldl -lSDL2 /usr/local/lib/libassimp.a /usr/local/lib/libIrrXML.a /usr/local/lib/libzlibstatic.a
+LIB = -ldl -lSDL2
 BIN = bin
 OUT = out
 
-imgui_SRC = ../imgui
+imgui_SRC = lib/imgui
 imgui_OBJ = imgui.cpp imgui_draw.cpp
 imgui_INC = 
 
 libs_SRC = lib
 libs_OBJ = gl3w.c imgui_impl_sdl_gl3.cpp
-libs_INC = -Iinclude -I/usr/include/SDL2 -I../imgui
+libs_INC = -Iinclude -I/usr/include/SDL2 -Ilib/imgui
 
 main_SRC = src
 main_OBJ = defines.cpp glak.cpp main.cpp
-main_INC = -Iinclude -Iinclude/SDL -I/usr/local/include -I../imgui
+main_INC = -Iinclude -Iinclude/SDL -I/usr/local/include -Ilib/imgui
 
 programs = main imgui libs
 
