@@ -15,6 +15,25 @@
         "xutility": "cpp",
         "bitset": "cpp",
         "stack": "cpp",
-        "type_traits": "cpp"
+        "type_traits": "cpp",
+        "chrono": "cpp",
+        "functional": "cpp",
+        "future": "cpp",
+        "ratio": "cpp",
+        "tuple": "cpp",
+        "utility": "cpp",
+        "xmemory0": "cpp",
+        "xstddef": "cpp",
+        "xtr1common": "cpp",
+        "system_error": "cpp",
+        "xfunctional": "cpp",
+        "unordered_map": "cpp",
+        "array": "cpp",
+        "istream": "cpp",
+        "xlocmes": "cpp",
+        "xlocmon": "cpp",
+        "xlocnum": "cpp",
+        "xloctime": "cpp",
+        "xmemory": "cpp"
     }
 }
