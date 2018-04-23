@@ -55,7 +55,7 @@ void glakLinkProgram(GLuint program);
 
 struct glakVertex
 {
-    glakVec3 pos;
+    glakVec4 pos;
     glakVec4 col;
     glakVec3 norm;
     glakVec2 coord;
