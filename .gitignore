@@ -1,8 +1,6 @@
 bin/*
 out/*
 *.exe
-*.dll
-*.lib
 *.pdb
 *.ilk
 *.dump

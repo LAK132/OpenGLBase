@@ -8,17 +8,17 @@ set APP=app.exe
 
 set SOURCES=main imgui libs 
 
-set imgui_SRC=../dear-imgui
+set imgui_SRC=lib/imgui
 set imgui_OBJ=imgui.cpp imgui_draw.cpp
-set imgui_INC=../dear-imgui
+set imgui_INC=lib/imgui
 
 set libs_SRC=lib
 set libs_OBJ=gl3w.c imgui_impl_sdl_gl3.cpp
-set libs_INC=include include/SDL ../dear-imgui
+set libs_INC=include include/SDL lib/imgui
 
 set main_SRC=src
 set main_OBJ=defines.cpp glak.cpp main.cpp
-set main_INC=include include/SDL ../dear-imgui
+set main_INC=include include/SDL lib/imgui
 
 goto :eof
 

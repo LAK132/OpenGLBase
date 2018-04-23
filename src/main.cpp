@@ -28,13 +28,13 @@ void loop()
 
     }
 
-    ImGui::SetNextWindowPos({0, 0}, ImGuiCond_Always);
-    ImGui::SetNextWindowSize(io->DisplaySize, ImGuiCond_Always);
-    if(ImGui::Begin("OpenGL Application Base", &mainOpen, ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoCollapse|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoSavedSettings))
-    {
+    // ImGui::SetNextWindowPos({0, 0}, ImGuiCond_Always);
+    // ImGui::SetNextWindowSize(io->DisplaySize, ImGuiCond_Always);
+    // if(ImGui::Begin("OpenGL Application Base", &mainOpen, ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoCollapse|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoSavedSettings))
+    // {
         
-    }
-    ImGui::End();
+    // }
+    // ImGui::End();
 
     if(rightMenuOpen)
     {
@@ -54,7 +54,6 @@ void draw()
 
 void init()
 {
-
     vtxObj.init();
 
     shader.init(R"(
