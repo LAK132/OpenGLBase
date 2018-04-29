@@ -1,4 +1,6 @@
 #include "glak.h"
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 void glakReadFile(const string& src, string& dst)
 {
@@ -155,13 +157,10 @@ void glakMesh::updateBuffer()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(glakIndex), &(index[0]), GL_STATIC_DRAW);
 }
 
-void glakMesh::draw()//glakShader* shader)
+void glakMesh::draw()
 {
-    // if (shader == nullptr) return;
     glBindVertexArray(buffer.vtxArr);
-    // shader->enable();
     glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, NULL);
-    // shader->disable();
     glBindVertexArray(0);
 }
 
@@ -178,7 +177,7 @@ void glakObject::draw()
     glakShader* prev = nullptr;
     for(auto it = mesh.begin(); it != mesh.end(); it++)
     {
-        if (it->material < shader.size())
+        if (it->material < shader.size() && &(shader[it->material]) != nullptr)
         {
             if (prev != &(shader[it->material]))
             {
