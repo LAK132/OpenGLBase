@@ -34,6 +34,13 @@
         "xlocmon": "cpp",
         "xlocnum": "cpp",
         "xloctime": "cpp",
-        "xmemory": "cpp"
+        "xmemory": "cpp",
+        "atomic": "cpp",
+        "xxatomic": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp",
+        "xiosbase": "cpp",
+        "ios": "cpp",
+        "iostream": "cpp"
     }
 }

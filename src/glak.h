@@ -19,9 +19,12 @@ using std::vector;
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <tiny_obj_loader.h>
 
 // Implement DQ transforms http://simonstechblog.blogspot.com.au/2011/11/dual-quaternion.html
 //http://www.chinedufn.com/dual-quaternion-shader-explained/
+
+#define DEBUG cout << __FILE__ << "(" << __LINE__ << ")" << endl;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
