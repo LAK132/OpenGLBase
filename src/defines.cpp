@@ -1,4 +1,4 @@
 #include "defines.h"
 
-bool debugOn = false;
+bool debugOn = true;
 bool throwOn = true;

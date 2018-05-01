@@ -5,13 +5,12 @@ using std::istream;
 using std::ifstream;
 #include <vector>
 using std::vector;
-#define LAK_MULTITHREAD
+
 #include "lakmain.h"
 #include "glak.h"
 #include "imgui_impl_sdl_gl3.h"
 
-#define APP_NAME "OpenGL Application"
-#define SDL_MAIN_HANDLED
+#define APP_NAME "OpenGL Demo Application"
 
 #ifndef MAIN_H
 #define MAIN_H
@@ -26,10 +25,5 @@ struct userData_t
     ImGuiIO* io = nullptr;
     ImGuiStyle* style = nullptr;
 };
-
-// void init();
-// void draw();
-// void loop();
-// void destroy();
 
 #endif

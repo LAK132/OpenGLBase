@@ -14,12 +14,12 @@ int main()
     
     update(&run, &window, 0.0, &userData);
 
-    #ifdef LAK_MULTITHREAD
+    #ifdef LAKMAIN_MULTITHREAD
     thread draw(draw_loop, &run, &lock, &locklock, &window, &glContext, &userData);
     #endif
     update_loop(&run, &lock, &locklock, &window, &glContext, &userData);
 
-    #ifdef LAK_MULTITHREAD
+    #ifdef LAKMAIN_MULTITHREAD
     draw.join();
     #endif
 
@@ -27,7 +27,7 @@ int main()
     return destroy(&window, &glContext, &userData);
 }
 
-#ifdef LAK_MULTITHREAD
+#ifdef LAKMAIN_MULTITHREAD
 void update_loop(atomic_bool* run, mutex* lock, mutex* locklock, SDL_Window** window, SDL_GLContext* glContext, void** userData)
 {
     uint64_t LAST = 0;
