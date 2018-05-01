@@ -1,4 +1,6 @@
 #include "glak.h"
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 void glakReadFile(const string& src, string& dst)
 {
@@ -155,14 +157,84 @@ void glakMesh::updateBuffer()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(glakIndex), &(index[0]), GL_STATIC_DRAW);
 }
 
-void glakMesh::draw()//glakShader* shader)
+void glakMesh::draw()
 {
-    // if (shader == nullptr) return;
     glBindVertexArray(buffer.vtxArr);
-    // shader->enable();
     glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, NULL);
-    // shader->disable();
     glBindVertexArray(0);
+}
+
+glakTransform& glakTransform::addTranslation(const glm::vec3& displace)
+{
+    translation = glm::translate(translation, displace);
+    return *this;
+}
+
+glakTransform& glakTransform::addTranslation(glm::vec3&& displace)
+{
+    return addTranslation(displace);
+}
+
+glakTransform& glakTransform::setTranslation(const glm::vec3& position)
+{
+    translation = glm::translate(glm::mat4(1.0f), position);
+    return *this;
+}
+
+glakTransform& glakTransform::setTranslation(glm::vec3&& position)
+{
+    return setTranslation(position);
+}
+
+glakTransform& glakTransform::addScale(const glm::vec3& sca)
+{
+    scale = glm::scale(scale, sca + glm::vec3(1.0f, 1.0f, 1.0f));
+    return *this;
+}
+
+glakTransform& glakTransform::addScale(glm::vec3&& sca)
+{
+    return addScale(sca);
+}
+
+glakTransform& glakTransform::setScale(const glm::vec3& sca)
+{
+    scale = glm::scale(glm::mat4(1.0f), sca);
+    return *this;
+}
+
+glakTransform& glakTransform::setScale(glm::vec3&& sca)
+{
+    return setScale(sca);
+}
+
+glakTransform& glakTransform::clear()
+{
+    translation = glm::mat4(1.0f);
+    rotation = glm::mat4(1.0f);
+    scale = glm::mat4(1.0f);
+    return *this;
+}
+
+glm::mat4& glakTransform::make(bool clearmats)
+{
+    transform = rotation * scale * transform;
+    if(clearmats) clear();
+    return transform;
+}
+
+glm::mat4& glakTransform::append(bool clearmats)
+{
+    transform = translation * rotation * scale * transform;
+    if(clearmats) clear();
+    return transform;
+}
+
+glm::mat4& glakTransform::prepend(bool clearmats)
+{
+    transform = transform * translation * rotation * scale;
+    if(clearmats) clear();
+    return transform;
 }
 
 void glakObject::updateBuffer()
@@ -178,7 +250,7 @@ void glakObject::draw()
     glakShader* prev = nullptr;
     for(auto it = mesh.begin(); it != mesh.end(); it++)
     {
-        if (it->material < shader.size())
+        if (it->material < shader.size() && &(shader[it->material]) != nullptr)
         {
             if (prev != &(shader[it->material]))
             {

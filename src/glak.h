@@ -13,15 +13,26 @@ using std::make_shared;
 #include <vector>
 using std::vector;
 #include <stddef.h>
-#include <imgui.h>
-#include <GL/gl3w.h>
+// OpenGL
 #include <SDL.h>
+#include <GL/gl3w.h>
+// UI
+#include <imgui.h>
+// Math
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+// Models
+#include <tiny_obj_loader.h>
 
 // Implement DQ transforms http://simonstechblog.blogspot.com.au/2011/11/dual-quaternion.html
 //http://www.chinedufn.com/dual-quaternion-shader-explained/
+
+#ifndef DEBUG
+#define DEBUG cout << __FILE__ << "(" << __LINE__ << ")" << endl
+#endif
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -35,15 +46,6 @@ using std::vector;
 #ifndef M_RADTODEG
 #define M_RADTODEG(x) ((x*180.0)/M_PI)
 #endif
-#ifndef glakVec4
-#define glakVec4 glm::vec4
-#endif
-#ifndef glakVec3
-#define glakVec3 glm::vec3
-#endif
-#ifndef glakVec2
-#define glakVec2 glm::vec2
-#endif
 
 #ifndef GLAK_H
 #define GLAK_H
@@ -55,10 +57,10 @@ void glakLinkProgram(GLuint program);
 
 struct glakVertex
 {
-    glakVec4 pos;
-    glakVec4 col;
-    glakVec3 norm;
-    glakVec2 coord;
+    glm::vec4 pos;
+    glm::vec4 col;
+    glm::vec3 norm;
+    glm::vec2 coord;
 };
 
 #define GLAK_VERTEX_ATTRIB_CONSTS(X, E) static const GLintptr X ## Off = offsetof(glakVertex, glakVertex::X); static const size_t X ## Size = E;
@@ -111,8 +113,51 @@ public:
     void draw();//glakShader* shader);
 };
 
+struct glakTransform
+{
+    glm::mat4 translation = glm::mat4(1.0f);
+    glm::mat4 rotation = glm::mat4(1.0f);
+    glm::mat4 scale = glm::mat4(1.0f);
+    glm::mat4 transform = glm::mat4(1.0f);
+    glakTransform& addTranslation(const glm::vec3& displace);   
+    glakTransform& addTranslation(glm::vec3&& displace);   
+    glakTransform& setTranslation(const glm::vec3& position);
+    glakTransform& setTranslation(glm::vec3&& position);
+    glakTransform& addScale(const glm::vec3& sca);
+    glakTransform& addScale(glm::vec3&& sca);
+    glakTransform& setScale(const glm::vec3& sca);
+    glakTransform& setScale(glm::vec3&& sca);
+    glakTransform& clear();
+    glm::mat4& make(bool clearmats = false);
+    glm::mat4& append(bool clearmats = false);
+    glm::mat4& prepend(bool clearmats = false);
+    template<typename T>
+    glakTransform& addRotation(T angle, const glm::vec3& axis)
+    {
+        rotation = glm::rotate(rotation, angle, axis);
+        return *this;
+    }
+    template<typename T>
+    glakTransform& addRotation(T angle, glm::vec3&& axis)
+    {
+        return addRotation(angle, axis);
+    }
+    template<typename T>
+    glakTransform& setRotation(T angle, const glm::vec3& axis)
+    {
+        rotation = glm::rotate(glm::mat4(1.0f), angle, axis);
+        return *this;
+    }
+    template<typename T>
+    glakTransform& setRotation(T angle, glm::vec3&& axis)
+    {
+        return setRotation(angle, axis);
+    }
+};
+
 struct glakObject
 {
+    glakTransform transform;
     vector<glakShader> shader;
     vector<glakMesh> mesh;
     void updateBuffer();
