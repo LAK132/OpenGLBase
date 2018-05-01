@@ -41,6 +41,8 @@
         "thread": "cpp",
         "xiosbase": "cpp",
         "ios": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "algorithm": "cpp",
+        "locale": "cpp"
     }
 }

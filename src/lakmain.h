@@ -15,17 +15,14 @@ using std::endl;
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
-#ifndef APP_NAME
-#define APP_NAME "OpenGL Application"
-#endif
-#define DEBUG cout << __FILE__ << "(" << __LINE__ << ")" << endl;
+#include "defines.h"
 
 #ifndef LAKMAIN_H
 #define LAKMAIN_H
 
 int main();
 void update_loop(atomic_bool* run, mutex* draw_mtx, mutex* update_mtx, SDL_Window** window, SDL_GLContext* glContext, void** userData);
-#ifdef LAK_MULTITHREAD
+#ifdef LAKMAIN_MULTITHREAD
 void draw_loop(atomic_bool* run, mutex* draw_mtx, mutex* update_mtx, SDL_Window** window, SDL_GLContext* glContext, void** userData);
 #endif
 
