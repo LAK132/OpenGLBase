@@ -14,7 +14,7 @@ libs_OBJ = gl3w.c imgui_impl_sdl_gl3.cpp
 libs_INC = -Iinclude -I$(SDL) -Ilib/imgui
 
 main_SRC = src
-main_OBJ = defines.cpp glak.cpp main.cpp
+main_OBJ = main.cpp
 main_INC = -Iinclude -I$(SDL) -I/usr/local/include -Ilib/imgui
 
 programs = main imgui libs
