@@ -5,3 +5,4 @@ out/*
 *.ilk
 *.dump
 imgui.ini
+.vscode/settings.json

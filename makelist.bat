@@ -17,7 +17,7 @@ set libs_OBJ=gl3w.c imgui_impl_sdl_gl3.cpp
 set libs_INC=include include/SDL lib/imgui
 
 set main_SRC=src
-set main_OBJ=defines.cpp glak.cpp lakmain.cpp laktrie.cpp main.cpp 
+set main_OBJ=main.cpp 
 set main_INC=include include/SDL lib/imgui
 
 goto :eof

@@ -1,19 +1,149 @@
 #include "main.h"
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+#define GLAK_MULTITHREAD
+#define GLAK_HANDLE_MAIN
+#define GLAK_IMPLEMENTATION
+#include <glak.hpp>
+
+void credits()
+{
+    ImGui::PushID("Credits");
+    if(ImGui::TreeNode("ImGui"))
+    {
+        ImGui::Text(R"(https://github.com/ocornut/imgui
+
+The MIT License (MIT)
+
+Copyright (c) 2014-2018 Omar Cornut
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.)");
+        ImGui::TreePop();
+    }
+    if(ImGui::TreeNode("tinyobjloader"))
+    {
+        ImGui::Text(R"(https://github.com/syoyo/tinyobjloader
+
+The MIT License (MIT)
+
+Copyright (c) 2012-2016 Syoyo Fujita and many contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.)");
+        ImGui::TreePop();
+    }
+    if(ImGui::TreeNode("glm"))
+    {
+        ImGui::Text(R"(https://github.com/g-truc/glm
+
+The Happy Bunny License (Modified MIT License)
+
+Copyright (c) 2005 - 2016 G-Truc Creation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do so, subject to the
+following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions
+of the Software.
+
+Restrictions: By making use of the Software for military purposes, you choose to make a Bunny unhappy.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.)");
+        ImGui::TreePop();
+    }
+    if(ImGui::TreeNode("glak"))
+    {
+        ImGui::Text(R"(https://github.com/LAK132/glak
+        
+MIT License
+
+Copyright (c) 2018 LAK132
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.)");
+        ImGui::TreePop();
+    }
+    if(ImGui::TreeNode("gl3w"))
+    {
+        ImGui::Text("https://github.com/skaslev/gl3w");
+        ImGui::TreePop();
+    }
+    if(ImGui::TreeNode("SDL2"))
+    {
+        ImGui::Text("https://www.libsdl.org/");
+        ImGui::TreePop();
+    }
+    ImGui::PopID();
+}
 
 ///
 /// loop()
 /// Called every loop
 ///
-void update(atomic_bool* run, SDL_Window** window, double deltaTime, void** userDataPtr)
+void update(glakLoopData* ld, double deltaTime)
 {
-    userData_t*& ud = *(userData_t**)userDataPtr;
+    userData_t* ud = (userData_t*)ld->userData;
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
         ImGui_ImplSdlGL3_ProcessEvent(&event);
-        if (event.type == SDL_QUIT) *run = false;
+        if (event.type == SDL_QUIT) ld->run = false;
     }
-    ImGui_ImplSdlGL3_NewFrame(*window);
+    ImGui_ImplSdlGL3_NewFrame(ld->window);
 
     // static bool is not reset every time loop() is called, effectively global variable but cannot be accessed outside of the loop() scope
     static bool rightMenuOpen = true;
@@ -44,7 +174,7 @@ void update(atomic_bool* run, SDL_Window** window, double deltaTime, void** user
         {
             ImGui::Text("Delta Time %f", deltaTime);
             // Draw the library credits
-            glakCredits();
+            credits();
         }
         // End the window
         ImGui::End();
@@ -56,9 +186,9 @@ void update(atomic_bool* run, SDL_Window** window, double deltaTime, void** user
 /// draw()
 /// Called every loop
 ///
-void draw(atomic_bool* run, SDL_Window** window, void** userDataPtr)
+void draw(glakLoopData* ld, double deltaTime)
 {
-    userData_t*& ud = *(userData_t**)userDataPtr;
+    userData_t* ud = (userData_t*)ld->userData;
     glViewport(0, 0, (int)ud->io->DisplaySize.x, (int)ud->io->DisplaySize.y);
     glClearColor(ud->clearCol[0], ud->clearCol[1], ud->clearCol[2], ud->clearCol[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -67,22 +197,21 @@ void draw(atomic_bool* run, SDL_Window** window, void** userDataPtr)
     ud->obj.draw();
 
     ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-    SDL_GL_SwapWindow(*window);
+    SDL_GL_SwapWindow(ld->window);
 }
 
 ///
 /// init()
 /// This will only be run once (when the application starts)
 ///
-int init(SDL_Window** window, SDL_GLContext* glContext, void** userDataPtr)
+void init(glakLoopData* ld)
 {
-    *userDataPtr = (void*)new userData_t();
-    userData_t*& ud = *(userData_t**)userDataPtr;
+    userData_t* ud = new userData_t();
     // Setup SDL
     if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0)
     {
         printf("Error: %s\n", SDL_GetError());
-        return -1;
+        throw exception();
     }
 
     // Setup Window
@@ -95,8 +224,8 @@ int init(SDL_Window** window, SDL_GLContext* glContext, void** userDataPtr)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
-    *window = SDL_CreateWindow(APP_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
-    *glContext = SDL_GL_CreateContext(*window);
+    ld->window = SDL_CreateWindow(APP_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
+    ld->glContext = SDL_GL_CreateContext(ld->window);
     if (SDL_GL_SetSwapInterval(-1) == -1) // adaptive vsync
     {
         SDL_GL_SetSwapInterval(1); // standard vsync
@@ -108,7 +237,7 @@ int init(SDL_Window** window, SDL_GLContext* glContext, void** userDataPtr)
     // Initialise ImGui
     ImGui::CreateContext();
     ud->io = &ImGui::GetIO();
-    ImGui_ImplSdlGL3_Init(*window);
+    ImGui_ImplSdlGL3_Init(ld->window);
     ImGui::StyleColorsDark();
     ud->style = &ImGui::GetStyle();
     ud->style->WindowRounding = 0;
@@ -117,7 +246,7 @@ int init(SDL_Window** window, SDL_GLContext* glContext, void** userDataPtr)
     // shader.init(glakReadFile("shaders/vshader.glsl"), glakReadFile("shaders/fshader.glsl"));
 
     // Create a shader (requires recompiling to change shader but more portable)
-    ud->shader.init(
+    shared_ptr<glakShader> shader = make_shared<glakShader>(glakShader(
 R"(
 #version 330 core
 
@@ -144,14 +273,14 @@ out vec4 pColor;
 void main() 
 { 
     pColor = fColor;
-})");
+})"));
 
     // Enable OpenGL Z buffer
     glEnable(GL_DEPTH_TEST);
 
     // Add a shader to the object
     ud->obj.shader.resize(1);
-    ud->obj.shader[0] = ud->shader;
+    ud->obj.shader[0] = shader;
 
     // Add a mesh to the object
     ud->obj.mesh.resize(1);
@@ -215,25 +344,23 @@ void main()
 
     ud->obj.updateBuffer();
 
-    return 0;
+    ld->userData = (void*)ud;
 }
 
 ///
 /// destroy()
 /// Called only once (at application shutdown)
 ///
-int destroy(SDL_Window** window, SDL_GLContext* glContext, void** userDataPtr)
+void destroy(glakLoopData* ld)
 {
-    userData_t*& ud = *(userData_t**)userDataPtr;
+    userData_t* ud = (userData_t*)ld->userData;
     ImGui_ImplSdlGL3_Shutdown();
     ImGui::DestroyContext();
 
-    SDL_GL_DeleteContext(*glContext);
-    SDL_DestroyWindow(*window);
+    SDL_GL_DeleteContext(ld->glContext);
+    SDL_DestroyWindow(ld->window);
 
     delete ud;
 
     SDL_Quit();
-
-    return 0;
 }
