@@ -41,11 +41,13 @@ using std::vector;
 
 // OpenGL
 #include <GL/gl3w.h>
+#ifndef GLAK_DISABLE_3D
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#endif
 
 #ifndef GLAK_H
 #define GLAK_H
@@ -57,6 +59,7 @@ extern bool throwOn;
 #define DEBUG if(debugOn) std::cout << __FILE__ << "(" << std::dec << __LINE__ << ")" << std::endl
 #define THROW(x) if(throwOn) throw x
 
+#ifndef GLAK_DISABLE_3D
 void glakReadFile(string src, string* dst);
 string glakReadFile(string src);
 void glakInitShader(GLuint program, const string& src, GLenum type);
@@ -176,6 +179,8 @@ struct glakObject
     void draw();
 };
 
+#endif // GLAK_DISABLE_3D
+
 #endif // GLAK_H
 
 /*
@@ -243,6 +248,8 @@ void destroy(glakLoopData* ld);
 
 bool debugOn = true;
 bool throwOn = true;
+
+#ifndef GLAK_DISABLE_3D
 
 void glakReadFile(string src, string* dst)
 {
@@ -554,6 +561,8 @@ void glakObject::draw()
     }
     if(prev != nullptr) prev->disable();
 }
+
+#endif // GLAK_DISABLE_3D
 
 #ifdef GLAK_HANDLE_MAIN
 
