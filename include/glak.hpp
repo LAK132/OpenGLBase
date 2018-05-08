@@ -52,8 +52,6 @@ using std::vector;
 #ifndef GLAK_H
 #define GLAK_H
 
-#ifndef cstring
-
 extern bool debugOn;
 extern bool throwOn;
 #define DEBUG if(debugOn) std::cout << __FILE__ << "(" << std::dec << __LINE__ << ")" << std::endl
@@ -180,8 +178,6 @@ struct glakObject
 };
 
 #endif // GLAK_DISABLE_3D
-
-#endif // GLAK_H
 
 /*
 #define GLAK_HANDLE_MAIN
