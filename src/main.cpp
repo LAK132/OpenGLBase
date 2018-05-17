@@ -1,7 +1,7 @@
 #include "main.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-// #define GLAK_MULTITHREAD
+#define GLAK_MULTITHREAD
 #define GLAK_HANDLE_MAIN
 #define GLAK_IMPLEMENTATION
 #include <glak.hpp>
@@ -182,27 +182,22 @@ void update(glakLoopData* ld, double deltaTime)
     ImGui::Render();
 }
 
+
 ///
 /// draw()
 /// Called every loop
 ///
 void draw(glakLoopData* ld, double deltaTime)
 {
-    static bool firstDraw = true;
-    if(firstDraw)
-    {
-        userData_t* ud = (userData_t*)ld->userData;
-        glViewport(0, 0, (int)ud->io->DisplaySize.x, (int)ud->io->DisplaySize.y);
-        glClearColor(ud->clearCol[0], ud->clearCol[1], ud->clearCol[2], ud->clearCol[3]);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    userData_t* ud = (userData_t*)ld->userData;
+    glViewport(0, 0, (int)ud->io->DisplaySize.x, (int)ud->io->DisplaySize.y);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Draw our object
-        ud->obj.draw();
+    // Draw our object
+    ud->obj.draw();
 
-        ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-        SDL_GL_SwapWindow(ld->window);
-        firstDraw = false;
-    }
+    ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
+    SDL_GL_SwapWindow(ld->window);
 }
 
 ///
@@ -229,7 +224,7 @@ void init(glakLoopData* ld)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
-    ld->window = SDL_CreateWindow(APP_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
+    ld->window = SDL_CreateWindow(APP_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 500, 500, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
     ld->glContext = SDL_GL_CreateContext(ld->window);
     if (SDL_GL_SetSwapInterval(-1) == -1) // adaptive vsync
     {
@@ -264,8 +259,7 @@ out vec4 fColor;
 
 void main()
 {
-    gl_Position.xy = vPosition.xy;
-    gl_Position.z = vPosition.z - 0.5;
+    gl_Position = vPosition;
     fColor = vColor;
 })",
 R"(
@@ -279,11 +273,6 @@ void main()
 { 
     pColor = fColor;
 })"));
-
-    shader->attributes["vPosition"].type = "position";
-    shader->attributes["vColor"].type = "color";
-    shader->attributes["vTexCoord"].type = "texcoord";
-    shader->attributes["vNormal"].type = "normal";
 
     for(auto it = shader->attributes.begin(); it != shader->attributes.end(); it++)
     {
@@ -319,18 +308,18 @@ void main()
         objfile.close();
 
         // Copy vertex information
-        shared_ptr<glm::vec4> vpos(new glm::vec4[attrib.vertices.size()/3], std::default_delete<glm::vec4[]>());
-        glm::vec4* vposptr = vpos.get(); // * and [0] mean the same thing in C/C++
+        glakMeshElement& vpos = ud->obj.mesh[0].elements["vPosition"];
+        vpos.data = shared_ptr<void>(new glm::vec4[attrib.vertices.size()/3], std::default_delete<glm::vec4[]>());
+        glm::vec4* vposptr = (glm::vec4*)vpos.data.get();
         for(size_t i = 0, j = 0; i < ud->obj.mesh[0].elements.size(); i++)
         {
             vposptr[i].x = attrib.vertices[j++]/10.0f;
             vposptr[i].y = attrib.vertices[j++]/10.0f;
             vposptr[i].z = attrib.vertices[j++]/10.0f;
         }
-        ud->obj.mesh[0].elements["position"].data = vpos;
-        ud->obj.mesh[0].elements["position"].size = sizeof(glm::vec4);
-        ud->obj.mesh[0].elements["position"].length = attrib.vertices.size() / 3;
-        // ud->obj.mesh[0].elements["position"].glname = "vPosition";
+        vpos.size = sizeof(glm::vec4) * attrib.vertices.size()/3;
+        vpos.normalized = false;
+        vpos.stride = 0;
 
         // Copy index information
         ud->obj.mesh[0].index.resize(shape[0].mesh.indices.size());
@@ -342,42 +331,37 @@ void main()
     else
     {
         // If we couldn't find teapot.obj, create a flat colored plane
-        cout << "Error opening OBJ file " << objdir << endl;
+        cout << "Error opening OBJ file " << endl;
 
         // Add vertices
-        shared_ptr<glm::vec4> vpos(new glm::vec4[4], std::default_delete<glm::vec4[]>());
-        glm::vec4* vposptr = vpos.get();
-        vposptr[0] = {-0.7f, -0.7f, 0.0f, 1.0f};
-        vposptr[1] = {-0.7f,  0.7f, 0.0f, 1.0f};
-        vposptr[2] = { 0.7f,  0.7f, 0.0f, 1.0f};
-        vposptr[3] = { 0.7f, -0.7f, 0.0f, 1.0f};
-        ud->obj.mesh[0].elements["position"].data = vpos;
-        DEBUG << vposptr << " " << vposptr[3][0] << endl;
-        ud->obj.mesh[0].elements["position"].size = sizeof(glm::vec4);
-        ud->obj.mesh[0].elements["position"].length = 4;
-        // ud->obj.mesh[0].elements["position"].glname = "vPosition";
+        glakMeshElement& vpos = ud->obj.mesh[0].elements["vPosition"];
+        vpos.data = shared_ptr<void>(new glm::vec4[4], default_delete<glm::vec4[]>());
+        glm::vec4* vposp = (glm::vec4*)vpos.data.get();
+        vposp[0] = {-0.7f, -0.7f, 0.0f, 1.0f};
+        vposp[1] = {-0.7f,  0.7f, 0.0f, 1.0f};
+        vposp[2] = { 0.7f, -0.7f, 0.0f, 1.0f};
+        vposp[3] = { 0.7f,  0.7f, 0.0f, 1.0f};
+        vpos.normalized = false;
+        vpos.size = sizeof(glm::vec4[4]);
+        vpos.stride = 0;
 
         // Add colors
-        // shared_ptr<glm::vec4> vcol(new glm::vec4[4], std::default_delete<glm::vec4[]>());
-        // glm::vec4* vcolptr = vcol.get();
-        // vcolptr[0] = {1.0f, 0.0f, 0.0f, 1.0f};
-        // vcolptr[1] = {0.0f, 1.0f, 0.0f, 1.0f};
-        // vcolptr[2] = {0.0f, 0.0f, 1.0f, 1.0f};
-        // vcolptr[3] = {1.0f, 1.0f, 1.0f, 1.0f};
-        // ud->obj.mesh[0].elements["color"].data = vcol;
-        // DEBUG << vcolptr << " " << &(vcolptr[0]) << " " << &(vcolptr[0][0]) << endl;
-        // ud->obj.mesh[0].elements["color"].size = sizeof(glm::vec4) * 4;
-        // ud->obj.mesh[0].elements["color"].glname = "vColor";
+        glakMeshElement& vcol = ud->obj.mesh[0].elements["vColor"];
+        vcol.data = shared_ptr<void>(new glm::vec4[4], default_delete<glm::vec4[]>());
+        glm::vec4* vcolp = (glm::vec4*)vcol.data.get();
+        vcolp[0] = {1.0f, 0.0f, 0.0f, 1.0f};
+        vcolp[1] = {0.0f, 1.0f, 0.0f, 1.0f};
+        vcolp[2] = {0.0f, 0.0f, 1.0f, 1.0f};
+        vcolp[3] = {1.0f, 1.0f, 1.0f, 1.0f};
+        vcol.normalized = false;
+        vcol.size = sizeof(glm::vec4[4]);
+        vcol.stride = 0;
 
-        // Add indices for triagles ((0, 1, 2), (0, 2, 3))
-        ud->obj.mesh[0].index.resize(6);
-        ud->obj.mesh[0].index = {0, 1, 2, 0, 2, 3};
+        ud->obj.mesh[0].index = {0, 1, 2, 1, 2, 3};
     }
 
-    for(auto it = ud->obj.mesh[0].elements.begin(); it != ud->obj.mesh[0].elements.end(); it++)
-    {
-        DEBUG << it->first << " " << it->second.glname << endl;
-    }
+    glViewport(0, 0, 500, 500);
+    glClearColor(ud->clearCol[0], ud->clearCol[1], ud->clearCol[2], ud->clearCol[3]);
 
     ud->obj.updateBuffer();
 
