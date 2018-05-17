@@ -38,6 +38,8 @@ using std::make_shared;
 using std::vector;
 #include <stddef.h>
 #include <stdint.h>
+#include <unordered_map>
+using std::unordered_map;
 
 // OpenGL
 #include <GL/gl3w.h>
@@ -81,14 +83,32 @@ struct glakVertexConst
     GLAK_VERTEX_ATTRIB_CONSTS(coord,    sizeof(glakVertex::coord) / sizeof(glakVertex::coord.x))    // coordSize, coordOff
 };
 
+#define GLAK_ELEMENT_NAME_LEN 32
+struct glakShaderElement
+{
+    GLint position = 0; // program position
+    GLenum type = GL_FLOAT;
+    GLint size = 4; // element count
+    string name = ""; // name in shader
+    bool active = false;
+};
+
+struct glakMeshElement
+{
+    shared_ptr<void> data = nullptr;
+    size_t size = 0;
+    size_t stride = 0;
+    GLintptr offset = 0; // buffer position
+    bool normalized = false;
+};
+
+// template <typename T>
 struct glakShader
 {
     GLint prevProgram = NULL;
     shared_ptr<GLint> program;
-    GLint position = -1;
-    GLint color = -1;
-    GLint normal = -1;
-    GLint texCoord = -1;
+    unordered_map<string, glakShaderElement> attributes; // user defined type name ->  element
+    unordered_map<string, glakShaderElement> uniforms; // user defined type name ->  element
     glakShader();
     glakShader(const glakShader& other);
     glakShader(glakShader&& other);
@@ -97,7 +117,8 @@ struct glakShader
     glakShader& operator=(glakShader&& other);
     ~glakShader();
     void init(string vshader, string fshader);
-    void enable();
+    void initAttribs();
+    void enable(unordered_map<string, glakMeshElement>* attrs);
     void disable();
     GLint operator*() const;
 };
@@ -107,21 +128,20 @@ struct glakBuffer
     bool isInit = false;
     GLuint vertArr = 0, vertBuff = 0, indxBuff = 0;
     void init();
+    void bind();
     ~glakBuffer();
 };
-
-typedef GLushort glakIndex;
 
 struct glakMesh
 {
 private:
     size_t index_count = 0;
-    size_t vertex_count = 0;
+    size_t element_count = 0;
 public:
     size_t material = 0;
     glakBuffer buffer;
-    vector<glakVertex> vertex;
-    vector<glakIndex> index;
+    unordered_map<string, glakMeshElement> elements;
+    vector<GLuint> index;
     void updateBuffer();
     void draw();
 };
@@ -213,6 +233,7 @@ struct glakLoopData
 
 struct glakLoopData
 {
+    bool run;
     SDL_Window* window;
     SDL_GLContext glContext;
     void* userData;
@@ -321,19 +342,15 @@ glakShader::glakShader(){}
 glakShader::glakShader(const glakShader& other)
 {
     program = other.program;
-    position = other.position;
-    normal = other.normal;
-    color = other.color;
-    texCoord = other.texCoord;
+    attributes = other.attributes;
+    uniforms = other.uniforms;
 }
 
 glakShader::glakShader(glakShader&& other)
 {
     program = other.program;
-    position = other.position;
-    normal = other.normal;
-    color = other.color;
-    texCoord = other.texCoord;
+    attributes = other.attributes;
+    uniforms = other.uniforms;
 }
 
 glakShader::glakShader(string vshader, string fshader)
@@ -344,20 +361,16 @@ glakShader::glakShader(string vshader, string fshader)
 glakShader& glakShader::operator=(const glakShader& other)
 {
     program = other.program;
-    position = other.position;
-    normal = other.normal;
-    color = other.color;
-    texCoord = other.texCoord;
+    attributes = other.attributes;
+    uniforms = other.uniforms;
     return *this;
 }
 
 glakShader& glakShader::operator=(glakShader&& other)
 {
     program = other.program;
-    position = other.position;
-    normal = other.normal;
-    color = other.color;
-    texCoord = other.texCoord;
+    attributes = other.attributes;
+    uniforms = other.uniforms;
     return *this;
 }
 
@@ -375,35 +388,125 @@ void glakShader::init(string vshader, string fshader)
     glakInitShader(*program, vshader, GL_VERTEX_SHADER);
     glakInitShader(*program, fshader, GL_FRAGMENT_SHADER);
     glakLinkProgram(*program);
+    initAttribs();
+}
 
-    position =  glGetAttribLocation(*program, "vPosition");
-    normal =    glGetAttribLocation(*program, "vNormal");
-    color =     glGetAttribLocation(*program, "vColor");
-    texCoord =  glGetAttribLocation(*program, "vTexCoord");
+void glakShader::initAttribs()
+{
+    GLint count;
+    const GLsizei bufSize = GLAK_ELEMENT_NAME_LEN;
+    GLchar name[bufSize];
+    GLsizei length;
+    GLint size;
+    GLenum type;
+
+    attributes.clear();
+    glGetProgramiv(*program, GL_ACTIVE_ATTRIBUTES, &count);
+    for (GLint i = 0; i < count; i++)
+    {
+        glGetActiveAttrib(*program, (GLuint)i, bufSize, &length, &size, &type, name);
+        glakShaderElement elem;
+        elem.position = glGetAttribLocation(*program, name);
+        DEBUG << name << " " << size << endl;
+        switch (type)
+        {
+            case GL_FLOAT: { 
+                elem.size = size; 
+                elem.type = GL_FLOAT;
+            } break;
+            case GL_FLOAT_VEC2: { 
+                elem.size = size * 2;
+                elem.type = GL_FLOAT;
+            } break; 
+            case GL_FLOAT_VEC3: { 
+                elem.size = size * 3;
+                elem.type = GL_FLOAT;
+                break; 
+            } break;
+            case GL_FLOAT_VEC4: { 
+                elem.size = size * 4;
+                elem.type = GL_FLOAT;
+            } break;
+            default: { 
+                elem.size = 0;
+                elem.type = 0;
+                break; 
+            }
+        }
+        elem.name = name;
+        DEBUG << i << " " << elem.size << " " << elem.type << " " << name << endl;
+        attributes[name] = elem;
+    }
+
+    uniforms.clear();
+    glGetProgramiv(*program, GL_ACTIVE_UNIFORMS, &count);
+    for (GLint i = 0; i < count; i++)
+    {
+        glGetActiveUniform(*program, (GLuint)i, bufSize, &length, &size, &type, name);
+        glakShaderElement elem;
+        elem.position = glGetAttribLocation(*program, name);
+        switch (type)
+        {
+            case GL_FLOAT: { 
+                elem.size = size; 
+                elem.type = GL_FLOAT;
+            } break;
+            case GL_FLOAT_VEC2: { 
+                elem.size = size * 2;
+                elem.type = GL_FLOAT;
+            } break; 
+            case GL_FLOAT_VEC3: { 
+                elem.size = size * 3;
+                elem.type = GL_FLOAT;
+                break; 
+            } break;
+            case GL_FLOAT_VEC4: { 
+                elem.size = size * 4;
+                elem.type = GL_FLOAT;
+            } break;
+            default: { 
+                elem.size = 0;
+                elem.type = 0;
+                break; 
+            }
+        }
+        elem.name = name;
+        uniforms[name] = elem;
+    }
 }
 
 #define GLAK_ENABLE_ATTRIB(N, S, T, NO, PS, O) if(N >= 0) {glEnableVertexAttribArray(N); glVertexAttribPointer(N, S, T, NO, PS, (GLvoid*)O);}
 
-void glakShader::enable()
+void glakShader::enable(unordered_map<string, glakMeshElement>* attrs)
 {
-    glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
+    // glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
     if (program.use_count() <= 0) return;
     glUseProgram(*program);
-    GLAK_ENABLE_ATTRIB(position,    glakVertexConst::posSize,   GL_FLOAT, GL_FALSE, sizeof(glakVertex), glakVertexConst::posOff)
-    GLAK_ENABLE_ATTRIB(color,       glakVertexConst::colSize,   GL_FLOAT, GL_FALSE, sizeof(glakVertex), glakVertexConst::colOff)
-    GLAK_ENABLE_ATTRIB(normal,      glakVertexConst::normSize,  GL_FLOAT, GL_FALSE, sizeof(glakVertex), glakVertexConst::normOff)
-    GLAK_ENABLE_ATTRIB(texCoord,    glakVertexConst::coordSize, GL_FLOAT, GL_FALSE, sizeof(glakVertex), glakVertexConst::coordOff)
+    
+    for(auto it = attributes.begin(); it != attributes.end(); it++)
+    {
+        auto attr = attrs->find(it->first);
+        if(attr != attrs->end())
+        {
+            glEnableVertexAttribArray(it->second.position);
+            it->second.active = true;
+            // glVertexAttribPointer correlates the shader variable at 'position' with the data in the buffer at 'offset'
+            glVertexAttribPointer(it->second.position, it->second.size, it->second.type, attr->second.normalized, attr->second.stride, (GLvoid*)attr->second.offset);
+        }
+    }
 }
 
+// template<typename T>
 void glakShader::disable()
 {
-    if (position >= 0)   glDisableVertexAttribArray(position);
-    if (normal >= 0)     glDisableVertexAttribArray(normal);
-    if (color >= 0)      glDisableVertexAttribArray(color);
-    if (texCoord >= 0)   glDisableVertexAttribArray(texCoord);
-    glUseProgram(prevProgram);
+    for(auto it = attributes.begin(); it != attributes.end(); it++)
+    {
+        if(it->second.active) glDisableVertexAttribArray(it->second.position);
+    }
+    // glUseProgram(prevProgram);
 }
 
+// template<typename T>
 GLint glakShader::operator*() const
 {
     return *program;
@@ -424,6 +527,14 @@ void glakBuffer::init()
     isInit = true;
 }
 
+void glakBuffer::bind()
+{
+    if(!isInit) init();
+    glBindVertexArray(vertArr);
+    glBindBuffer(GL_ARRAY_BUFFER, vertBuff);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indxBuff);
+}
+
 glakBuffer::~glakBuffer()
 {
     if(!isInit) return;
@@ -436,24 +547,59 @@ glakBuffer::~glakBuffer()
 // glakMesh
 void glakMesh::updateBuffer()
 {
-    buffer.init();
-    
-    glBindVertexArray(buffer.vertArr);
+    buffer.bind();
 
-    vertex_count = vertex.size();
-    glBindBuffer(GL_ARRAY_BUFFER, buffer.vertBuff);
-    glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(glakVertex), &(vertex[0]), GL_STATIC_DRAW);
+    element_count = 0;
+    for(auto it = elements.begin(); it != elements.end(); it++)
+    {
+        element_count += it->second.size;
+    }
+
+    glBufferData(GL_ARRAY_BUFFER, element_count, NULL, GL_STATIC_DRAW);
+    GLintptr off = 0;
+    for(auto it = elements.begin(); it != elements.end(); it++)
+    {
+        it->second.offset = off; // calculate the buffer offset on the fly
+        glBufferSubData(GL_ARRAY_BUFFER, it->second.offset, it->second.size, it->second.data.get());
+        off += it->second.size;
+    }
 
     index_count = index.size();
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.indxBuff);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(glakIndex), &(index[0]), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), &(index[0]), GL_STATIC_DRAW);
 }
 
 void glakMesh::draw()
 {
-    glBindVertexArray(buffer.vertArr);
-    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, NULL);
-    glBindVertexArray(0);
+    buffer.bind();
+    glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, NULL);
+}
+
+// glakObject
+void glakObject::updateBuffer()
+{
+    for(auto it = mesh.begin(); it != mesh.end(); it++)
+    {
+        it->updateBuffer();
+    }
+}
+
+void glakObject::draw()
+{
+    shared_ptr<glakShader> prev = nullptr;
+    for(auto it = mesh.begin(); it != mesh.end(); it++)
+    {
+        if (it->material < shader.size() && &(shader[it->material]) != nullptr)
+        {
+            if (prev != shader[it->material])
+            {
+                if(prev != nullptr) prev->disable();
+                prev = shader[it->material];
+                prev->enable(&(it->elements));
+            }
+            it->draw();
+        }
+    }
+    if(prev != nullptr) prev->disable();
 }
 
 // glakTransform
@@ -528,34 +674,6 @@ glm::mat4& glakTransform::prepend(bool clearmats)
     transform = transform * translation * rotation * scale;
     if(clearmats) clear();
     return transform;
-}
-
-// glakObject
-void glakObject::updateBuffer()
-{
-    for(auto it = mesh.begin(); it != mesh.end(); it++)
-    {
-        it->updateBuffer();
-    }
-}
-
-void glakObject::draw()
-{
-    shared_ptr<glakShader> prev = nullptr;
-    for(auto it = mesh.begin(); it != mesh.end(); it++)
-    {
-        if (it->material < shader.size() && &(shader[it->material]) != nullptr)
-        {
-            if (prev != shader[it->material])
-            {
-                if(prev != nullptr) prev->disable();
-                prev = shader[it->material];
-                prev->enable();
-            }
-            it->draw();
-        }
-    }
-    if(prev != nullptr) prev->disable();
 }
 
 #endif // GLAK_DISABLE_3D

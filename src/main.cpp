@@ -182,6 +182,7 @@ void update(glakLoopData* ld, double deltaTime)
     ImGui::Render();
 }
 
+
 ///
 /// draw()
 /// Called every loop
@@ -190,7 +191,6 @@ void draw(glakLoopData* ld, double deltaTime)
 {
     userData_t* ud = (userData_t*)ld->userData;
     glViewport(0, 0, (int)ud->io->DisplaySize.x, (int)ud->io->DisplaySize.y);
-    glClearColor(ud->clearCol[0], ud->clearCol[1], ud->clearCol[2], ud->clearCol[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw our object
@@ -224,7 +224,7 @@ void init(glakLoopData* ld)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
-    ld->window = SDL_CreateWindow(APP_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
+    ld->window = SDL_CreateWindow(APP_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 500, 500, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
     ld->glContext = SDL_GL_CreateContext(ld->window);
     if (SDL_GL_SetSwapInterval(-1) == -1) // adaptive vsync
     {
@@ -259,8 +259,7 @@ out vec4 fColor;
 
 void main()
 {
-    gl_Position.xy = vPosition.xy;
-    gl_Position.z = vPosition.z - 0.5;
+    gl_Position = vPosition;
     fColor = vColor;
 })",
 R"(
@@ -274,6 +273,11 @@ void main()
 { 
     pColor = fColor;
 })"));
+
+    for(auto it = shader->attributes.begin(); it != shader->attributes.end(); it++)
+    {
+        DEBUG << it->first << endl;
+    }
 
     // Enable OpenGL Z buffer
     glEnable(GL_DEPTH_TEST);
@@ -304,13 +308,18 @@ void main()
         objfile.close();
 
         // Copy vertex information
-        ud->obj.mesh[0].vertex.resize(attrib.vertices.size()/3);
-        for(size_t i = 0, j = 0; i < ud->obj.mesh[0].vertex.size(); i++)
+        glakMeshElement& vpos = ud->obj.mesh[0].elements["vPosition"];
+        vpos.data = shared_ptr<void>(new glm::vec4[attrib.vertices.size()/3], std::default_delete<glm::vec4[]>());
+        glm::vec4* vposptr = (glm::vec4*)vpos.data.get();
+        for(size_t i = 0, j = 0; i < ud->obj.mesh[0].elements.size(); i++)
         {
-            ud->obj.mesh[0].vertex[i].pos.x = attrib.vertices[j++]/10.0f;
-            ud->obj.mesh[0].vertex[i].pos.y = attrib.vertices[j++]/10.0f;
-            ud->obj.mesh[0].vertex[i].pos.z = attrib.vertices[j++]/10.0f;
+            vposptr[i].x = attrib.vertices[j++]/10.0f;
+            vposptr[i].y = attrib.vertices[j++]/10.0f;
+            vposptr[i].z = attrib.vertices[j++]/10.0f;
         }
+        vpos.size = sizeof(glm::vec4) * attrib.vertices.size()/3;
+        vpos.normalized = false;
+        vpos.stride = 0;
 
         // Copy index information
         ud->obj.mesh[0].index.resize(shape[0].mesh.indices.size());
@@ -322,25 +331,37 @@ void main()
     else
     {
         // If we couldn't find teapot.obj, create a flat colored plane
-        cout << "Error opening OBJ file " << objdir << endl;
+        cout << "Error opening OBJ file " << endl;
 
         // Add vertices
-        ud->obj.mesh[0].vertex.resize(4);
-        ud->obj.mesh[0].vertex[0].pos = {-0.7f, -0.7f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[1].pos = {-0.7f,  0.7f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[2].pos = { 0.7f,  0.7f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[3].pos = { 0.7f, -0.7f, 0.0f, 1.0f};
+        glakMeshElement& vpos = ud->obj.mesh[0].elements["vPosition"];
+        vpos.data = shared_ptr<void>(new glm::vec4[4], default_delete<glm::vec4[]>());
+        glm::vec4* vposp = (glm::vec4*)vpos.data.get();
+        vposp[0] = {-0.7f, -0.7f, 0.0f, 1.0f};
+        vposp[1] = {-0.7f,  0.7f, 0.0f, 1.0f};
+        vposp[2] = { 0.7f, -0.7f, 0.0f, 1.0f};
+        vposp[3] = { 0.7f,  0.7f, 0.0f, 1.0f};
+        vpos.normalized = false;
+        vpos.size = sizeof(glm::vec4[4]);
+        vpos.stride = 0;
 
         // Add colors
-        ud->obj.mesh[0].vertex[0].col = {1.0f, 0.0f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[1].col = {0.0f, 1.0f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[2].col = {0.0f, 0.0f, 1.0f, 1.0f};
-        ud->obj.mesh[0].vertex[3].col = {1.0f, 1.0f, 1.0f, 1.0f};
+        glakMeshElement& vcol = ud->obj.mesh[0].elements["vColor"];
+        vcol.data = shared_ptr<void>(new glm::vec4[4], default_delete<glm::vec4[]>());
+        glm::vec4* vcolp = (glm::vec4*)vcol.data.get();
+        vcolp[0] = {1.0f, 0.0f, 0.0f, 1.0f};
+        vcolp[1] = {0.0f, 1.0f, 0.0f, 1.0f};
+        vcolp[2] = {0.0f, 0.0f, 1.0f, 1.0f};
+        vcolp[3] = {1.0f, 1.0f, 1.0f, 1.0f};
+        vcol.normalized = false;
+        vcol.size = sizeof(glm::vec4[4]);
+        vcol.stride = 0;
 
-        // Add indices for triagles ((0, 1, 2), (0, 2, 3))
-        ud->obj.mesh[0].index.resize(6);
-        ud->obj.mesh[0].index = {0, 1, 2, 0, 2, 3};
+        ud->obj.mesh[0].index = {0, 1, 2, 1, 2, 3};
     }
+
+    glViewport(0, 0, 500, 500);
+    glClearColor(ud->clearCol[0], ud->clearCol[1], ud->clearCol[2], ud->clearCol[3]);
 
     ud->obj.updateBuffer();
 

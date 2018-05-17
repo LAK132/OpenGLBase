@@ -13,7 +13,7 @@ using std::vector;
 #define GLAK_MULTITHREAD
 #define GLAK_HANDLE_MAIN
 #include <glak.hpp>
-
+using std::default_delete;
 
 #define APP_NAME "OpenGL Demo Application"
 
