@@ -1,7 +1,7 @@
 CXX = g++ -std=c++11
 SDL = /usr/include/SDL2
 
-LIB = -ldl -lSDL2
+LIB = -ldl -lSDL2 -pthread
 BIN = bin
 OUT = out
 

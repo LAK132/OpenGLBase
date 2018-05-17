@@ -10,7 +10,7 @@ using std::vector;
 #include <imgui_impl_sdl_gl3.h>
 #include <tiny_obj_loader.h>
 
-#define GLAK_MULTITHREAD
+// #define GLAK_MULTITHREAD
 #define GLAK_HANDLE_MAIN
 #include <glak.hpp>
 
