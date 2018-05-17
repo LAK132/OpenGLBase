@@ -1,7 +1,7 @@
 #include "main.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-#define GLAK_MULTITHREAD
+// #define GLAK_MULTITHREAD
 #define GLAK_HANDLE_MAIN
 #define GLAK_IMPLEMENTATION
 #include <glak.hpp>
@@ -188,16 +188,21 @@ void update(glakLoopData* ld, double deltaTime)
 ///
 void draw(glakLoopData* ld, double deltaTime)
 {
-    userData_t* ud = (userData_t*)ld->userData;
-    glViewport(0, 0, (int)ud->io->DisplaySize.x, (int)ud->io->DisplaySize.y);
-    glClearColor(ud->clearCol[0], ud->clearCol[1], ud->clearCol[2], ud->clearCol[3]);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    static bool firstDraw = true;
+    if(firstDraw)
+    {
+        userData_t* ud = (userData_t*)ld->userData;
+        glViewport(0, 0, (int)ud->io->DisplaySize.x, (int)ud->io->DisplaySize.y);
+        glClearColor(ud->clearCol[0], ud->clearCol[1], ud->clearCol[2], ud->clearCol[3]);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Draw our object
-    ud->obj.draw();
+        // Draw our object
+        ud->obj.draw();
 
-    ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-    SDL_GL_SwapWindow(ld->window);
+        ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
+        SDL_GL_SwapWindow(ld->window);
+        firstDraw = false;
+    }
 }
 
 ///
@@ -275,6 +280,16 @@ void main()
     pColor = fColor;
 })"));
 
+    shader->attributes["vPosition"].type = "position";
+    shader->attributes["vColor"].type = "color";
+    shader->attributes["vTexCoord"].type = "texcoord";
+    shader->attributes["vNormal"].type = "normal";
+
+    for(auto it = shader->attributes.begin(); it != shader->attributes.end(); it++)
+    {
+        DEBUG << it->first << endl;
+    }
+
     // Enable OpenGL Z buffer
     glEnable(GL_DEPTH_TEST);
 
@@ -304,13 +319,18 @@ void main()
         objfile.close();
 
         // Copy vertex information
-        ud->obj.mesh[0].vertex.resize(attrib.vertices.size()/3);
-        for(size_t i = 0, j = 0; i < ud->obj.mesh[0].vertex.size(); i++)
+        shared_ptr<glm::vec4> vpos(new glm::vec4[attrib.vertices.size()/3], std::default_delete<glm::vec4[]>());
+        glm::vec4* vposptr = vpos.get(); // * and [0] mean the same thing in C/C++
+        for(size_t i = 0, j = 0; i < ud->obj.mesh[0].elements.size(); i++)
         {
-            ud->obj.mesh[0].vertex[i].pos.x = attrib.vertices[j++]/10.0f;
-            ud->obj.mesh[0].vertex[i].pos.y = attrib.vertices[j++]/10.0f;
-            ud->obj.mesh[0].vertex[i].pos.z = attrib.vertices[j++]/10.0f;
+            vposptr[i].x = attrib.vertices[j++]/10.0f;
+            vposptr[i].y = attrib.vertices[j++]/10.0f;
+            vposptr[i].z = attrib.vertices[j++]/10.0f;
         }
+        ud->obj.mesh[0].elements["position"].data = vpos;
+        ud->obj.mesh[0].elements["position"].size = sizeof(glm::vec4);
+        ud->obj.mesh[0].elements["position"].length = attrib.vertices.size() / 3;
+        // ud->obj.mesh[0].elements["position"].glname = "vPosition";
 
         // Copy index information
         ud->obj.mesh[0].index.resize(shape[0].mesh.indices.size());
@@ -325,21 +345,38 @@ void main()
         cout << "Error opening OBJ file " << objdir << endl;
 
         // Add vertices
-        ud->obj.mesh[0].vertex.resize(4);
-        ud->obj.mesh[0].vertex[0].pos = {-0.7f, -0.7f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[1].pos = {-0.7f,  0.7f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[2].pos = { 0.7f,  0.7f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[3].pos = { 0.7f, -0.7f, 0.0f, 1.0f};
+        shared_ptr<glm::vec4> vpos(new glm::vec4[4], std::default_delete<glm::vec4[]>());
+        glm::vec4* vposptr = vpos.get();
+        vposptr[0] = {-0.7f, -0.7f, 0.0f, 1.0f};
+        vposptr[1] = {-0.7f,  0.7f, 0.0f, 1.0f};
+        vposptr[2] = { 0.7f,  0.7f, 0.0f, 1.0f};
+        vposptr[3] = { 0.7f, -0.7f, 0.0f, 1.0f};
+        ud->obj.mesh[0].elements["position"].data = vpos;
+        DEBUG << vposptr << " " << vposptr[3][0] << endl;
+        ud->obj.mesh[0].elements["position"].size = sizeof(glm::vec4);
+        ud->obj.mesh[0].elements["position"].length = 4;
+        // ud->obj.mesh[0].elements["position"].glname = "vPosition";
 
         // Add colors
-        ud->obj.mesh[0].vertex[0].col = {1.0f, 0.0f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[1].col = {0.0f, 1.0f, 0.0f, 1.0f};
-        ud->obj.mesh[0].vertex[2].col = {0.0f, 0.0f, 1.0f, 1.0f};
-        ud->obj.mesh[0].vertex[3].col = {1.0f, 1.0f, 1.0f, 1.0f};
+        // shared_ptr<glm::vec4> vcol(new glm::vec4[4], std::default_delete<glm::vec4[]>());
+        // glm::vec4* vcolptr = vcol.get();
+        // vcolptr[0] = {1.0f, 0.0f, 0.0f, 1.0f};
+        // vcolptr[1] = {0.0f, 1.0f, 0.0f, 1.0f};
+        // vcolptr[2] = {0.0f, 0.0f, 1.0f, 1.0f};
+        // vcolptr[3] = {1.0f, 1.0f, 1.0f, 1.0f};
+        // ud->obj.mesh[0].elements["color"].data = vcol;
+        // DEBUG << vcolptr << " " << &(vcolptr[0]) << " " << &(vcolptr[0][0]) << endl;
+        // ud->obj.mesh[0].elements["color"].size = sizeof(glm::vec4) * 4;
+        // ud->obj.mesh[0].elements["color"].glname = "vColor";
 
         // Add indices for triagles ((0, 1, 2), (0, 2, 3))
         ud->obj.mesh[0].index.resize(6);
         ud->obj.mesh[0].index = {0, 1, 2, 0, 2, 3};
+    }
+
+    for(auto it = ud->obj.mesh[0].elements.begin(); it != ud->obj.mesh[0].elements.end(); it++)
+    {
+        DEBUG << it->first << " " << it->second.glname << endl;
     }
 
     ud->obj.updateBuffer();
