@@ -65,25 +65,6 @@ string glakReadFile(string src);
 void glakInitShader(GLuint program, const string& src, GLenum type);
 void glakLinkProgram(GLuint program);
 
-struct glakVertex
-{
-    glm::vec4 pos;
-    glm::vec4 col;
-    glm::vec3 norm;
-    glm::vec2 coord;
-};
-
-#define GLAK_VERTEX_ATTRIB_CONSTS(X, E) static const GLintptr X ## Off = offsetof(glakVertex, glakVertex::X); static const size_t X ## Size = E;
-
-struct glakVertexConst
-{
-    GLAK_VERTEX_ATTRIB_CONSTS(pos,      sizeof(glakVertex::pos) / sizeof(glakVertex::pos.x))        // posSize, posOff
-    GLAK_VERTEX_ATTRIB_CONSTS(col,      sizeof(glakVertex::col) / sizeof(glakVertex::col.x))        // colSize, colOff
-    GLAK_VERTEX_ATTRIB_CONSTS(norm,     sizeof(glakVertex::norm) / sizeof(glakVertex::norm.x))      // normSize, normOff
-    GLAK_VERTEX_ATTRIB_CONSTS(coord,    sizeof(glakVertex::coord) / sizeof(glakVertex::coord.x))    // coordSize, coordOff
-};
-
-#define GLAK_ELEMENT_NAME_LEN 32
 struct glakShaderElement
 {
     GLint position = 0; // program position
@@ -102,10 +83,8 @@ struct glakMeshElement
     bool normalized = false;
 };
 
-// template <typename T>
 struct glakShader
 {
-    GLint prevProgram = NULL;
     shared_ptr<GLint> program;
     unordered_map<string, glakShaderElement> attributes; // user defined type name ->  element
     unordered_map<string, glakShaderElement> uniforms; // user defined type name ->  element
@@ -395,92 +374,47 @@ void glakShader::init(string vshader, string fshader)
 void glakShader::initAttribs()
 {
     GLint count;
-    const GLsizei bufSize = GLAK_ELEMENT_NAME_LEN;
-    GLchar name[bufSize];
+    vector<GLchar> name;
     GLsizei length;
     GLint size;
     GLenum type;
+
+    GLint nameLen = 0;
+    glGetProgramiv(*program, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &nameLen);
+    name.resize(nameLen);
 
     attributes.clear();
     glGetProgramiv(*program, GL_ACTIVE_ATTRIBUTES, &count);
     for (GLint i = 0; i < count; i++)
     {
-        glGetActiveAttrib(*program, (GLuint)i, bufSize, &length, &size, &type, name);
+        glGetActiveAttrib(*program, (GLuint)i, nameLen, &length, &size, &type, &name[0]);
         glakShaderElement elem;
-        elem.position = glGetAttribLocation(*program, name);
-        DEBUG << name << " " << size << endl;
-        switch (type)
-        {
-            case GL_FLOAT: { 
-                elem.size = size; 
-                elem.type = GL_FLOAT;
-            } break;
-            case GL_FLOAT_VEC2: { 
-                elem.size = size * 2;
-                elem.type = GL_FLOAT;
-            } break; 
-            case GL_FLOAT_VEC3: { 
-                elem.size = size * 3;
-                elem.type = GL_FLOAT;
-                break; 
-            } break;
-            case GL_FLOAT_VEC4: { 
-                elem.size = size * 4;
-                elem.type = GL_FLOAT;
-            } break;
-            default: { 
-                elem.size = 0;
-                elem.type = 0;
-                break; 
-            }
-        }
-        elem.name = name;
-        DEBUG << i << " " << elem.size << " " << elem.type << " " << name << endl;
-        attributes[name] = elem;
+        elem.position = glGetAttribLocation(*program, &name[0]);
+        glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_TYPE, (GLint*)&elem.type);
+        glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_SIZE, &elem.size);
+        elem.name = &name[0];
+        attributes[elem.name] = elem;
     }
 
+    glGetProgramiv(*program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &nameLen);
+    name.resize(nameLen);
+    
     uniforms.clear();
     glGetProgramiv(*program, GL_ACTIVE_UNIFORMS, &count);
     for (GLint i = 0; i < count; i++)
     {
-        glGetActiveUniform(*program, (GLuint)i, bufSize, &length, &size, &type, name);
+        glGetActiveUniform(*program, (GLuint)i, nameLen, &length, &size, &type, &name[0]);
         glakShaderElement elem;
-        elem.position = glGetAttribLocation(*program, name);
-        switch (type)
-        {
-            case GL_FLOAT: { 
-                elem.size = size; 
-                elem.type = GL_FLOAT;
-            } break;
-            case GL_FLOAT_VEC2: { 
-                elem.size = size * 2;
-                elem.type = GL_FLOAT;
-            } break; 
-            case GL_FLOAT_VEC3: { 
-                elem.size = size * 3;
-                elem.type = GL_FLOAT;
-                break; 
-            } break;
-            case GL_FLOAT_VEC4: { 
-                elem.size = size * 4;
-                elem.type = GL_FLOAT;
-            } break;
-            default: { 
-                elem.size = 0;
-                elem.type = 0;
-                break; 
-            }
-        }
-        elem.name = name;
-        uniforms[name] = elem;
+        elem.position = glGetUniformLocation(*program, &name[0]);
+        glGetUniformiv(i, GL_UNIFORM_TYPE, (GLint*)&elem.type);
+        glGetUniformiv(i, GL_UNIFORM_SIZE, &elem.size);
+        elem.name = &name[0];
+        uniforms[elem.name] = elem;
     }
 }
 
-#define GLAK_ENABLE_ATTRIB(N, S, T, NO, PS, O) if(N >= 0) {glEnableVertexAttribArray(N); glVertexAttribPointer(N, S, T, NO, PS, (GLvoid*)O);}
-
 void glakShader::enable(unordered_map<string, glakMeshElement>* attrs)
 {
-    // glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
     if (program.use_count() <= 0) return;
     glUseProgram(*program);
     
@@ -497,17 +431,14 @@ void glakShader::enable(unordered_map<string, glakMeshElement>* attrs)
     }
 }
 
-// template<typename T>
 void glakShader::disable()
 {
     for(auto it = attributes.begin(); it != attributes.end(); it++)
     {
         if(it->second.active) glDisableVertexAttribArray(it->second.position);
     }
-    // glUseProgram(prevProgram);
 }
 
-// template<typename T>
 GLint glakShader::operator*() const
 {
     return *program;
