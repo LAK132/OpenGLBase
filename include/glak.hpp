@@ -97,6 +97,7 @@ struct glakShader
     ~glakShader();
     void init(string vshader, string fshader);
     void initAttribs();
+    void setUniform(string name, void* data, GLsizei size = 1, GLboolean transpose = GL_FALSE);
     void enable(unordered_map<string, glakMeshElement>* attrs);
     void disable();
     GLint operator*() const;
@@ -172,6 +173,7 @@ struct glakObject
     glakTransform transform;
     vector<shared_ptr<glakShader>> shader;
     vector<glakMesh> mesh;
+    string modelUniformName = "model";
     void updateBuffer();
     void draw();
 };
@@ -406,10 +408,91 @@ void glakShader::initAttribs()
         glGetActiveUniform(*program, (GLuint)i, nameLen, &length, &size, &type, &name[0]);
         glakShaderElement elem;
         elem.position = glGetUniformLocation(*program, &name[0]);
-        glGetUniformiv(i, GL_UNIFORM_TYPE, (GLint*)&elem.type);
+        // glGetUniformiv(i, GL_UNIFORM_TYPE, (GLint*)&elem.type);
+        elem.type = type;
         glGetUniformiv(i, GL_UNIFORM_SIZE, &elem.size);
         elem.name = &name[0];
         uniforms[elem.name] = elem;
+    }
+}
+
+void glakShader::setUniform(string name, void* data, GLsizei size, GLboolean transpose)
+{
+    if (program.use_count() <= 0) return;
+    glUseProgram(*program);
+    glakShaderElement& elem = uniforms[name];
+    // DEBUG << name << " " << size << " " << elem.type << " " << elem.position << endl;
+    switch (elem.type)
+    {
+        case GL_FLOAT: 
+            glUniform1fv(elem.position, size, (GLfloat*)data); break;
+        case GL_FLOAT_VEC2:
+            glUniform2fv(elem.position, size, (GLfloat*)data); break;
+        case GL_FLOAT_VEC3:
+            glUniform3fv(elem.position, size, (GLfloat*)data); break;
+        case GL_FLOAT_VEC4:
+            glUniform4fv(elem.position, size, (GLfloat*)data); break;
+        case GL_FLOAT_MAT2:
+            glUniformMatrix2fv(elem.position, size, transpose, (GLfloat*)data); break;
+        case GL_FLOAT_MAT2x3:
+            glUniformMatrix2x3fv(elem.position, size, transpose, (GLfloat*)data); break;
+        case GL_FLOAT_MAT2x4:
+            glUniformMatrix2x4fv(elem.position, size, transpose, (GLfloat*)data); break;
+        case GL_FLOAT_MAT3:
+            glUniformMatrix3fv(elem.position, size, transpose, (GLfloat*)data); break;
+        case GL_FLOAT_MAT3x2:
+            glUniformMatrix3x2fv(elem.position, size, transpose, (GLfloat*)data); break;
+        case GL_FLOAT_MAT3x4:
+            glUniformMatrix3x4fv(elem.position, size, transpose, (GLfloat*)data); break;
+        case GL_FLOAT_MAT4:
+            glUniformMatrix4fv(elem.position, size, transpose, (GLfloat*)data); break;
+        case GL_FLOAT_MAT4x2:
+            glUniformMatrix4x2fv(elem.position, size, transpose, (GLfloat*)data); break;
+        case GL_FLOAT_MAT4x3:
+            glUniformMatrix4x3fv(elem.position, size, transpose, (GLfloat*)data); break;
+        case GL_DOUBLE: 
+            glUniform1dv(elem.position, size, (GLdouble*)data); break;
+        case GL_DOUBLE_VEC2:
+            glUniform2dv(elem.position, size, (GLdouble*)data); break;
+        case GL_DOUBLE_VEC3:
+            glUniform3dv(elem.position, size, (GLdouble*)data); break;
+        case GL_DOUBLE_VEC4:
+            glUniform4dv(elem.position, size, (GLdouble*)data); break;
+        case GL_DOUBLE_MAT2:
+            glUniformMatrix2dv(elem.position, size, transpose, (GLdouble*)data); break;
+        case GL_DOUBLE_MAT2x3:
+            glUniformMatrix2x3dv(elem.position, size, transpose, (GLdouble*)data); break;
+        case GL_DOUBLE_MAT2x4:
+            glUniformMatrix2x4dv(elem.position, size, transpose, (GLdouble*)data); break;
+        case GL_DOUBLE_MAT3:
+            glUniformMatrix3dv(elem.position, size, transpose, (GLdouble*)data); break;
+        case GL_DOUBLE_MAT3x2:
+            glUniformMatrix3x2dv(elem.position, size, transpose, (GLdouble*)data); break;
+        case GL_DOUBLE_MAT3x4:
+            glUniformMatrix3x4dv(elem.position, size, transpose, (GLdouble*)data); break;
+        case GL_DOUBLE_MAT4:
+            glUniformMatrix4dv(elem.position, size, transpose, (GLdouble*)data); break;
+        case GL_DOUBLE_MAT4x2:
+            glUniformMatrix4x2dv(elem.position, size, transpose, (GLdouble*)data); break;
+        case GL_DOUBLE_MAT4x3:
+            glUniformMatrix4x3dv(elem.position, size, transpose, (GLdouble*)data); break;
+        case GL_INT:
+            glUniform1iv(elem.position, size, (GLint*)data); break;
+        case GL_INT_VEC2:
+            glUniform2iv(elem.position, size, (GLint*)data); break;
+        case GL_INT_VEC3:
+            glUniform3iv(elem.position, size, (GLint*)data); break;
+        case GL_INT_VEC4:
+            glUniform4iv(elem.position, size, (GLint*)data); break;
+        case GL_UNSIGNED_INT:
+            glUniform1uiv(elem.position, size, (GLuint*)data); break;
+        case GL_UNSIGNED_INT_VEC2:
+            glUniform2uiv(elem.position, size, (GLuint*)data); break;
+        case GL_UNSIGNED_INT_VEC3:
+            glUniform3uiv(elem.position, size, (GLuint*)data); break;
+        case GL_UNSIGNED_INT_VEC4:
+            glUniform4uiv(elem.position, size, (GLuint*)data); break;
+        default: break;
     }
 }
 
@@ -527,6 +610,7 @@ void glakObject::draw()
                 if(prev != nullptr) prev->disable();
                 prev = shader[it->material];
                 prev->enable(&(it->elements));
+                prev->setUniform(modelUniformName, &(transform.transform)[0][0]);
             }
             it->draw();
         }
@@ -691,10 +775,10 @@ void draw_loop(glakLoopData* ld)
             SDL_GL_MakeCurrent(ld->window, ld->glContext);
             draw(ld, deltaTime);
 
-            ld->draw_mtx.unlock();
-
             SDL_GL_SwapWindow(ld->window);
-            SDL_GL_MakeCurrent(ld->window, 0);   
+            SDL_GL_MakeCurrent(ld->window, 0);  
+
+            ld->draw_mtx.unlock(); 
         }
         LAST = NOW;
         NOW = SDL_GetPerformanceCounter();
