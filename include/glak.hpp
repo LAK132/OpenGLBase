@@ -222,6 +222,7 @@ using std::mutex;
 struct glakLoopData
 {
     atomic_bool run;
+    double targetDrawTime = 1.0/60.0;
     mutex draw_mtx;
     mutex update_mtx;
     SDL_Window* window;
@@ -717,7 +718,7 @@ void update_loop(glakLoopData* ld)
     {
         LAST = NOW;
         NOW = SDL_GetPerformanceCounter();
-        deltaTime = ((NOW - LAST) * 1000) / (double) SDL_GetPerformanceFrequency();
+        deltaTime = ((NOW - LAST) * 1000.0) / (double) SDL_GetPerformanceFrequency();
 
         ld->update_mtx.lock();
         ld->draw_mtx.lock();
@@ -725,7 +726,7 @@ void update_loop(glakLoopData* ld)
 
         SDL_GL_MakeCurrent(ld->window, ld->glContext);
         update(ld, deltaTime);
-        SDL_GL_MakeCurrent(0, 0);
+        SDL_GL_MakeCurrent(ld->window, 0);
 
         ld->draw_mtx.unlock();
     }
@@ -736,28 +737,37 @@ void draw_loop(glakLoopData* ld)
     uint64_t LAST = SDL_GetPerformanceCounter();
     uint64_t NOW = SDL_GetPerformanceCounter();
     double deltaTime = 0;
-    double targetDrawTime = 12.0;
+    bool vsyncDisabled = SDL_GL_GetSwapInterval() == 0;
 
     while(ld->run)
     {
+        double deltaError = deltaTime - ld->targetDrawTime;
+        deltaTime = deltaError > 0.0 ? deltaError : 0.0;
+        do // busy wait the call thread if vsyncDisabled
+        {
+            LAST = NOW;
+            NOW = SDL_GetPerformanceCounter();
+            deltaTime += ((NOW - LAST) * 1000.0) / (double) SDL_GetPerformanceFrequency();
+            std::this_thread::yield();
+        } while (vsyncDisabled && deltaTime < ld->targetDrawTime);
         for(int i = 0; i < 2 && ld->run; i++)
         {
+
             ld->update_mtx.lock();
             ld->draw_mtx.lock();
             ld->update_mtx.unlock();
 
             SDL_GL_MakeCurrent(ld->window, ld->glContext);
             draw(ld, deltaTime);
-            SDL_GL_MakeCurrent(0, 0);
 
             ld->draw_mtx.unlock();
+
+            SDL_GL_SwapWindow(ld->window);
+            SDL_GL_MakeCurrent(ld->window, 0);   
         }
-        do 
-        {
-            LAST = NOW;
-            NOW = SDL_GetPerformanceCounter();
-            deltaTime += ((NOW - LAST) * 1000) / (double) SDL_GetPerformanceFrequency();
-        } while (deltaTime < targetDrawTime); // sleep the draw thread
+        LAST = NOW;
+        NOW = SDL_GetPerformanceCounter();
+        deltaTime += ((NOW - LAST) * 1000.0) / (double) SDL_GetPerformanceFrequency();
     }
 }
 
@@ -778,6 +788,7 @@ void update_loop(glakLoopData* ld)
 
         update(ld, deltaTime);
         draw(ld, deltaTime);
+        SDL_GL_SwapWindow(ld->window);
     }
     // SDL_GL_MakeCurrent(0, 0);
 }

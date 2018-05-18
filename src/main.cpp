@@ -1,8 +1,6 @@
 #include "main.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-#define GLAK_MULTITHREAD
-#define GLAK_HANDLE_MAIN
 #define GLAK_IMPLEMENTATION
 #include <glak.hpp>
 
@@ -197,7 +195,6 @@ void draw(glakLoopData* ld, double deltaTime)
     ud->obj.draw();
 
     ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
-    SDL_GL_SwapWindow(ld->window);
 }
 
 ///
@@ -226,10 +223,14 @@ void init(glakLoopData* ld)
     SDL_GetCurrentDisplayMode(0, &current);
     ld->window = SDL_CreateWindow(APP_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 500, 500, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
     ld->glContext = SDL_GL_CreateContext(ld->window);
+    SDL_GL_MakeCurrent(ld->window, ld->glContext);
+    // /*
     if (SDL_GL_SetSwapInterval(-1) == -1) // adaptive vsync
     {
         SDL_GL_SetSwapInterval(1); // standard vsync
     }
+    // */
+    // SDL_GL_SetSwapInterval(0); // no vsync
 
     // Initialise gl3w
     gl3wInit();
@@ -307,17 +308,20 @@ void main()
         tinyobj::LoadObj(&attrib, &shape, &material, &loaderror, (istream*)&objfile);
         objfile.close();
 
+        const size_t sz = attrib.vertices.size()/3;
+
         // Copy vertex information
         glakMeshElement& vpos = ud->obj.mesh[0].elements["vPosition"];
-        vpos.data = shared_ptr<void>(new glm::vec4[attrib.vertices.size()/3], std::default_delete<glm::vec4[]>());
-        glm::vec4* vposptr = (glm::vec4*)vpos.data.get();
-        for(size_t i = 0, j = 0; i < ud->obj.mesh[0].elements.size(); i++)
+        glm::vec4* vposptr = new glm::vec4[sz];
+        for(size_t i = 0, j = 0; i < sz; i++)
         {
             vposptr[i].x = attrib.vertices[j++]/10.0f;
             vposptr[i].y = attrib.vertices[j++]/10.0f;
             vposptr[i].z = attrib.vertices[j++]/10.0f;
+            vposptr[i].w = 1.0f;
         }
-        vpos.size = sizeof(glm::vec4) * attrib.vertices.size()/3;
+        vpos.data = shared_ptr<void>(vposptr, default_delete<glm::vec4[]>());
+        vpos.size = sizeof(glm::vec4) * sz;
         vpos.normalized = false;
         vpos.stride = 0;
 
@@ -335,26 +339,26 @@ void main()
 
         // Add vertices
         glakMeshElement& vpos = ud->obj.mesh[0].elements["vPosition"];
-        vpos.data = shared_ptr<void>(new glm::vec4[4], default_delete<glm::vec4[]>());
-        glm::vec4* vposp = (glm::vec4*)vpos.data.get();
+        glm::vec4* vposp = new glm::vec4[4];
         vposp[0] = {-0.7f, -0.7f, 0.0f, 1.0f};
         vposp[1] = {-0.7f,  0.7f, 0.0f, 1.0f};
         vposp[2] = { 0.7f, -0.7f, 0.0f, 1.0f};
         vposp[3] = { 0.7f,  0.7f, 0.0f, 1.0f};
+        vpos.data = shared_ptr<void>(vposp, default_delete<glm::vec4[]>());
+        vpos.size = sizeof(glm::vec4) * 4;
         vpos.normalized = false;
-        vpos.size = sizeof(glm::vec4[4]);
         vpos.stride = 0;
 
         // Add colors
         glakMeshElement& vcol = ud->obj.mesh[0].elements["vColor"];
-        vcol.data = shared_ptr<void>(new glm::vec4[4], default_delete<glm::vec4[]>());
-        glm::vec4* vcolp = (glm::vec4*)vcol.data.get();
+        glm::vec4* vcolp = new glm::vec4[4];
         vcolp[0] = {1.0f, 0.0f, 0.0f, 1.0f};
         vcolp[1] = {0.0f, 1.0f, 0.0f, 1.0f};
         vcolp[2] = {0.0f, 0.0f, 1.0f, 1.0f};
         vcolp[3] = {1.0f, 1.0f, 1.0f, 1.0f};
+        vcol.data = shared_ptr<void>(vcolp, default_delete<glm::vec4[]>());
+        vcol.size = sizeof(glm::vec4) * 4;
         vcol.normalized = false;
-        vcol.size = sizeof(glm::vec4[4]);
         vcol.stride = 0;
 
         ud->obj.mesh[0].index = {0, 1, 2, 1, 2, 3};
