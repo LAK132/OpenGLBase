@@ -128,22 +128,44 @@ public:
 
 struct glakTransform
 {
+    const static glm::vec4 XUP;
+    const static glm::vec4 YUP;
+    const static glm::vec4 ZUP;
+    const static glm::vec4 WUP;
     glm::mat4 translation = glm::mat4(1.0f);
     glm::mat4 rotation = glm::mat4(1.0f);
     glm::mat4 scale = glm::mat4(1.0f);
     glm::mat4 transform = glm::mat4(1.0f);
+    
     glakTransform& addTranslation(const glm::vec3& displace);   
     glakTransform& addTranslation(glm::vec3&& displace);   
+
     glakTransform& setTranslation(const glm::vec3& position);
     glakTransform& setTranslation(glm::vec3&& position);
+
+    glakTransform& preTranslate(const glm::vec3& displace);
+    glakTransform& preTranslate(glm::vec3&& displace);
+
+    glakTransform& postTranslate(const glm::vec3& displace);
+    glakTransform& postTranslate(glm::vec3&& displace);
+
     glakTransform& addScale(const glm::vec3& sca);
     glakTransform& addScale(glm::vec3&& sca);
+
     glakTransform& setScale(const glm::vec3& sca);
     glakTransform& setScale(glm::vec3&& sca);
+
+    glakTransform& preScale(const glm::vec3& sca);
+    glakTransform& preScale(glm::vec3&& sca);
+
+    glakTransform& postScale(const glm::vec3& sca);
+    glakTransform& postScale(glm::vec3&& sca);
+
     glakTransform& clear();
-    glm::mat4& make(bool clearmats = false);
-    glm::mat4& append(bool clearmats = false);
-    glm::mat4& prepend(bool clearmats = false);
+    glm::mat4& make();
+    glm::mat4& append();
+    glm::mat4& prepend();
+
     template<typename T>
     glakTransform& addRotation(T angle, const glm::vec3& axis)
     {
@@ -166,6 +188,33 @@ struct glakTransform
     {
         return setRotation(angle, axis);
     }
+    template<typename T>
+    glakTransform& preRotate(T angle, const glm::vec3& axis)
+    {
+        transform = transform * glm::rotate(glm::mat4(1.0f), angle, axis);
+        return *this;
+    }
+    template<typename T>
+    glakTransform& preRotate(T angle, glm::vec3&& axis)
+    {
+        return preRotate(angle, axis);
+    }
+    template<typename T>
+    glakTransform& postRotate(T angle, const glm::vec3& axis)
+    {
+        transform = glm::rotate(glm::mat4(1.0f), angle, axis) * transform;
+        return *this;
+    }
+    template<typename T>
+    glakTransform& postRotate(T angle, glm::vec3&& axis)
+    {
+        return postRotate(angle, axis);
+    }
+
+    glakTransform& lookAt(const glm::vec3& center, const glm::vec3& up);
+    glakTransform& lookAt(glm::vec3&& center, glm::vec3&& up);
+    glakTransform& lookAt(const glm::vec3& center, glm::vec3&& up);
+    glakTransform& lookAt(glm::vec3&& center, const glm::vec3& up);
 };
 
 struct glakObject
@@ -408,7 +457,6 @@ void glakShader::initAttribs()
         glGetActiveUniform(*program, (GLuint)i, nameLen, &length, &size, &type, &name[0]);
         glakShaderElement elem;
         elem.position = glGetUniformLocation(*program, &name[0]);
-        // glGetUniformiv(i, GL_UNIFORM_TYPE, (GLint*)&elem.type);
         elem.type = type;
         glGetUniformiv(i, GL_UNIFORM_SIZE, &elem.size);
         elem.name = &name[0];
@@ -421,7 +469,6 @@ void glakShader::setUniform(string name, void* data, GLsizei size, GLboolean tra
     if (program.use_count() <= 0) return;
     glUseProgram(*program);
     glakShaderElement& elem = uniforms[name];
-    // DEBUG << name << " " << size << " " << elem.type << " " << elem.position << endl;
     switch (elem.type)
     {
         case GL_FLOAT: 
@@ -619,6 +666,11 @@ void glakObject::draw()
 }
 
 // glakTransform
+const glm::vec4 glakTransform::XUP = {1.0f, 0.0f, 0.0f, 0.0f};
+const glm::vec4 glakTransform::YUP = {0.0f, 1.0f, 0.0f, 0.0f};
+const glm::vec4 glakTransform::ZUP = {0.0f, 0.0f, 1.0f, 0.0f};
+const glm::vec4 glakTransform::WUP = {0.0f, 0.0f, 0.0f, 1.0f};
+
 glakTransform& glakTransform::addTranslation(const glm::vec3& displace)
 {
     translation = glm::translate(translation, displace);
@@ -639,6 +691,28 @@ glakTransform& glakTransform::setTranslation(const glm::vec3& position)
 glakTransform& glakTransform::setTranslation(glm::vec3&& position)
 {
     return setTranslation(position);
+}
+
+glakTransform& glakTransform::preTranslate(const glm::vec3& displace)
+{
+    transform = transform * glm::translate(glm::mat4(1.0f), displace);
+    return *this;
+}
+
+glakTransform& glakTransform::preTranslate(glm::vec3&& displace)
+{
+    return preTranslate(displace);
+}
+
+glakTransform& glakTransform::postTranslate(const glm::vec3& displace)
+{
+    transform = glm::translate(glm::mat4(1.0f), displace) * transform;
+    return *this;
+}
+
+glakTransform& glakTransform::postTranslate(glm::vec3&& displace)
+{
+    return postTranslate(displace);
 }
 
 glakTransform& glakTransform::addScale(const glm::vec3& sca)
@@ -663,6 +737,28 @@ glakTransform& glakTransform::setScale(glm::vec3&& sca)
     return setScale(sca);
 }
 
+glakTransform& glakTransform::preScale(const glm::vec3& sca)
+{
+    transform = transform * glm::scale(glm::mat4(1.0f), sca);
+    return *this;
+}
+
+glakTransform& glakTransform::preScale(glm::vec3&& sca)
+{
+    return preScale(sca);
+}
+
+glakTransform& glakTransform::postScale(const glm::vec3& sca)
+{
+    transform = glm::scale(glm::mat4(1.0f), sca) * transform;
+    return *this;
+}
+
+glakTransform& glakTransform::postScale(glm::vec3&& sca)
+{
+    return postScale(sca);
+}
+
 glakTransform& glakTransform::clear()
 {
     translation = glm::mat4(1.0f);
@@ -671,25 +767,51 @@ glakTransform& glakTransform::clear()
     return *this;
 }
 
-glm::mat4& glakTransform::make(bool clearmats)
+glm::mat4& glakTransform::make()
 {
-    transform = rotation * scale * transform;
-    if(clearmats) clear();
+    transform = translation * rotation * scale;
     return transform;
 }
 
-glm::mat4& glakTransform::append(bool clearmats)
+glm::mat4& glakTransform::append()
 {
     transform = translation * rotation * scale * transform;
-    if(clearmats) clear();
     return transform;
 }
 
-glm::mat4& glakTransform::prepend(bool clearmats)
+glm::mat4& glakTransform::prepend()
 {
     transform = transform * translation * rotation * scale;
-    if(clearmats) clear();
     return transform;
+}
+
+glakTransform& glakTransform::lookAt(const glm::vec3& center, const glm::vec3& up)
+{
+    glm::vec3 w = glm::normalize(translation * WUP);
+    glm::vec3 u = glm::normalize(glm::cross(up, w));
+    glm::vec3 v = glm::cross(w, u);
+    rotation = {
+        u.x, v.x, w.x, 0.0f,
+        u.y, v.y, w.y, 0.0f,
+        u.z, v.z, w.z, 0.0f,
+        0.0f,0.0f,0.0f,1.0f,
+    };
+    return *this;
+}
+
+glakTransform& glakTransform::lookAt(glm::vec3&& center, glm::vec3&& up)
+{
+    return lookAt(center, up);
+}
+
+glakTransform& glakTransform::lookAt(const glm::vec3& center, glm::vec3&& up)
+{
+    return lookAt(center, up);
+}
+
+glakTransform& glakTransform::lookAt(glm::vec3&& center, const glm::vec3& up)
+{
+    return lookAt(center, up);
 }
 
 #endif // GLAK_DISABLE_3D
