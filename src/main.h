@@ -20,11 +20,21 @@ using std::default_delete;
 #ifndef MAIN_H
 #define MAIN_H
 
+struct model_t
+{
+    glakTransform transform;
+    shared_ptr<glakShader> shader;
+    glakMesh mesh;
+    string modelUniformName = "model";
+    void updateBuffer();
+    void draw();
+};
+
 struct userData_t
 {
     float clearCol[4] = {0.0f, 0.3125f, 0.3125f, 1.0f};
 
-    glakObject obj;
+    model_t obj;
 
     ImGuiIO* io = nullptr;
     ImGuiStyle* style = nullptr;

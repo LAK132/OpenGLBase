@@ -24,20 +24,27 @@ SOFTWARE.
 
 // C++ 
 #include <cmath>
+#include <stddef.h>
+#include <stdint.h>
+
 #include <iostream>
 using std::cout;
 using std::endl;
+
 #include <string>
 using std::string;
+
 #include <exception>
 using std::exception;
+
 #include <memory>
 using std::shared_ptr;
 using std::make_shared;
+using std::weak_ptr;
+
 #include <vector>
 using std::vector;
-#include <stddef.h>
-#include <stdint.h>
+
 #include <unordered_map>
 using std::unordered_map;
 
@@ -76,11 +83,19 @@ struct glakShaderElement
 
 struct glakMeshElement
 {
-    shared_ptr<void> data = nullptr;
+    void* data;
+    bool active = false;
     size_t size = 0;
     size_t stride = 0;
     GLintptr offset = 0; // buffer position
     bool normalized = false;
+    glakMeshElement();
+    glakMeshElement(size_t dsize, size_t dlength);
+    ~glakMeshElement();
+    void* init(size_t dsize, size_t dlength);
+    void* init(size_t dsize, size_t dlength, void* newptr);
+private:
+    bool isInit = false;
 };
 
 struct glakShader
@@ -132,10 +147,11 @@ struct glakTransform
     const static glm::vec4 YUP;
     const static glm::vec4 ZUP;
     const static glm::vec4 WUP;
-    glm::mat4 translation = glm::mat4(1.0f);
-    glm::mat4 rotation = glm::mat4(1.0f);
-    glm::mat4 scale = glm::mat4(1.0f);
-    glm::mat4 transform = glm::mat4(1.0f);
+    const static glm::mat4 IDENTITY;
+    glm::mat4 translation = IDENTITY;
+    glm::mat4 rotation = IDENTITY;
+    glm::mat4 scale = IDENTITY;
+    glm::mat4 transform = IDENTITY;
     
     glakTransform& addTranslation(const glm::vec3& displace);   
     glakTransform& addTranslation(glm::vec3&& displace);   
@@ -143,28 +159,14 @@ struct glakTransform
     glakTransform& setTranslation(const glm::vec3& position);
     glakTransform& setTranslation(glm::vec3&& position);
 
-    glakTransform& preTranslate(const glm::vec3& displace);
-    glakTransform& preTranslate(glm::vec3&& displace);
-
-    glakTransform& postTranslate(const glm::vec3& displace);
-    glakTransform& postTranslate(glm::vec3&& displace);
-
     glakTransform& addScale(const glm::vec3& sca);
     glakTransform& addScale(glm::vec3&& sca);
 
     glakTransform& setScale(const glm::vec3& sca);
     glakTransform& setScale(glm::vec3&& sca);
 
-    glakTransform& preScale(const glm::vec3& sca);
-    glakTransform& preScale(glm::vec3&& sca);
-
-    glakTransform& postScale(const glm::vec3& sca);
-    glakTransform& postScale(glm::vec3&& sca);
-
     glakTransform& clear();
-    glm::mat4& make();
-    glm::mat4& append();
-    glm::mat4& prepend();
+    glakTransform& make();
 
     template<typename T>
     glakTransform& addRotation(T angle, const glm::vec3& axis)
@@ -188,43 +190,6 @@ struct glakTransform
     {
         return setRotation(angle, axis);
     }
-    template<typename T>
-    glakTransform& preRotate(T angle, const glm::vec3& axis)
-    {
-        transform = transform * glm::rotate(glm::mat4(1.0f), angle, axis);
-        return *this;
-    }
-    template<typename T>
-    glakTransform& preRotate(T angle, glm::vec3&& axis)
-    {
-        return preRotate(angle, axis);
-    }
-    template<typename T>
-    glakTransform& postRotate(T angle, const glm::vec3& axis)
-    {
-        transform = glm::rotate(glm::mat4(1.0f), angle, axis) * transform;
-        return *this;
-    }
-    template<typename T>
-    glakTransform& postRotate(T angle, glm::vec3&& axis)
-    {
-        return postRotate(angle, axis);
-    }
-
-    glakTransform& lookAt(const glm::vec3& center, const glm::vec3& up);
-    glakTransform& lookAt(glm::vec3&& center, glm::vec3&& up);
-    glakTransform& lookAt(const glm::vec3& center, glm::vec3&& up);
-    glakTransform& lookAt(glm::vec3&& center, const glm::vec3& up);
-};
-
-struct glakObject
-{
-    glakTransform transform;
-    vector<shared_ptr<glakShader>> shader;
-    vector<glakMesh> mesh;
-    string modelUniformName = "model";
-    void updateBuffer();
-    void draw();
 };
 
 #endif // GLAK_DISABLE_3D
@@ -574,6 +539,39 @@ GLint glakShader::operator*() const
     return *program;
 }
 
+// glakMeshElement
+glakMeshElement::glakMeshElement(){}
+
+glakMeshElement::glakMeshElement(size_t dsize, size_t dlength)
+{
+    init(dsize, dlength);
+}
+
+glakMeshElement::~glakMeshElement()
+{
+    if(isInit) free(data);
+}
+
+void* glakMeshElement::init(size_t dsize, size_t dlength)
+{
+    if(isInit) free(data);
+    size = dsize * dlength;
+    stride = dsize;
+    data = malloc(dsize * dlength);
+    isInit = true;
+    return data;
+}
+
+void* glakMeshElement::init(size_t dsize, size_t dlength, void* newptr)
+{
+    if(isInit) free(data);
+    size = dsize * dlength;
+    stride = dsize;
+    data = newptr;
+    isInit = false;
+    return data;
+}
+
 // glakBuffer
 void glakBuffer::init()
 {
@@ -614,15 +612,16 @@ void glakMesh::updateBuffer()
     element_count = 0;
     for(auto it = elements.begin(); it != elements.end(); it++)
     {
-        element_count += it->second.size;
+        if(it->second.active) element_count += it->second.size;
     }
 
     glBufferData(GL_ARRAY_BUFFER, element_count, NULL, GL_STATIC_DRAW);
     GLintptr off = 0;
     for(auto it = elements.begin(); it != elements.end(); it++)
     {
+        if(!it->second.active) continue;
         it->second.offset = off; // calculate the buffer offset on the fly
-        glBufferSubData(GL_ARRAY_BUFFER, it->second.offset, it->second.size, it->second.data.get());
+        glBufferSubData(GL_ARRAY_BUFFER, it->second.offset, it->second.size, it->second.data);
         off += it->second.size;
     }
 
@@ -636,40 +635,18 @@ void glakMesh::draw()
     glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, NULL);
 }
 
-// glakObject
-void glakObject::updateBuffer()
-{
-    for(auto it = mesh.begin(); it != mesh.end(); it++)
-    {
-        it->updateBuffer();
-    }
-}
-
-void glakObject::draw()
-{
-    shared_ptr<glakShader> prev = nullptr;
-    for(auto it = mesh.begin(); it != mesh.end(); it++)
-    {
-        if (it->material < shader.size() && &(shader[it->material]) != nullptr)
-        {
-            if (prev != shader[it->material])
-            {
-                if(prev != nullptr) prev->disable();
-                prev = shader[it->material];
-                prev->enable(&(it->elements));
-                prev->setUniform(modelUniformName, &(transform.transform)[0][0]);
-            }
-            it->draw();
-        }
-    }
-    if(prev != nullptr) prev->disable();
-}
 
 // glakTransform
 const glm::vec4 glakTransform::XUP = {1.0f, 0.0f, 0.0f, 0.0f};
 const glm::vec4 glakTransform::YUP = {0.0f, 1.0f, 0.0f, 0.0f};
 const glm::vec4 glakTransform::ZUP = {0.0f, 0.0f, 1.0f, 0.0f};
 const glm::vec4 glakTransform::WUP = {0.0f, 0.0f, 0.0f, 1.0f};
+const glm::mat4 glakTransform::IDENTITY = {
+    1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f, 0.0f, 
+    0.0f, 0.0f, 1.0f, 0.0f, 
+    0.0f, 0.0f, 0.0f, 1.0f
+};
 
 glakTransform& glakTransform::addTranslation(const glm::vec3& displace)
 {
@@ -684,35 +661,13 @@ glakTransform& glakTransform::addTranslation(glm::vec3&& displace)
 
 glakTransform& glakTransform::setTranslation(const glm::vec3& position)
 {
-    translation = glm::translate(glm::mat4(1.0f), position);
+    translation = glm::translate(IDENTITY, position);
     return *this;
 }
 
 glakTransform& glakTransform::setTranslation(glm::vec3&& position)
 {
     return setTranslation(position);
-}
-
-glakTransform& glakTransform::preTranslate(const glm::vec3& displace)
-{
-    transform = transform * glm::translate(glm::mat4(1.0f), displace);
-    return *this;
-}
-
-glakTransform& glakTransform::preTranslate(glm::vec3&& displace)
-{
-    return preTranslate(displace);
-}
-
-glakTransform& glakTransform::postTranslate(const glm::vec3& displace)
-{
-    transform = glm::translate(glm::mat4(1.0f), displace) * transform;
-    return *this;
-}
-
-glakTransform& glakTransform::postTranslate(glm::vec3&& displace)
-{
-    return postTranslate(displace);
 }
 
 glakTransform& glakTransform::addScale(const glm::vec3& sca)
@@ -728,7 +683,7 @@ glakTransform& glakTransform::addScale(glm::vec3&& sca)
 
 glakTransform& glakTransform::setScale(const glm::vec3& sca)
 {
-    scale = glm::scale(glm::mat4(1.0f), sca);
+    scale = glm::scale(IDENTITY, sca);
     return *this;
 }
 
@@ -737,81 +692,19 @@ glakTransform& glakTransform::setScale(glm::vec3&& sca)
     return setScale(sca);
 }
 
-glakTransform& glakTransform::preScale(const glm::vec3& sca)
-{
-    transform = transform * glm::scale(glm::mat4(1.0f), sca);
-    return *this;
-}
-
-glakTransform& glakTransform::preScale(glm::vec3&& sca)
-{
-    return preScale(sca);
-}
-
-glakTransform& glakTransform::postScale(const glm::vec3& sca)
-{
-    transform = glm::scale(glm::mat4(1.0f), sca) * transform;
-    return *this;
-}
-
-glakTransform& glakTransform::postScale(glm::vec3&& sca)
-{
-    return postScale(sca);
-}
-
 glakTransform& glakTransform::clear()
 {
-    translation = glm::mat4(1.0f);
-    rotation = glm::mat4(1.0f);
-    scale = glm::mat4(1.0f);
+    translation = IDENTITY;
+    rotation = IDENTITY;
+    scale = IDENTITY;
     return *this;
 }
 
-glm::mat4& glakTransform::make()
+glakTransform& glakTransform::make()
 {
-    transform = translation * rotation * scale;
-    return transform;
-}
-
-glm::mat4& glakTransform::append()
-{
-    transform = translation * rotation * scale * transform;
-    return transform;
-}
-
-glm::mat4& glakTransform::prepend()
-{
-    transform = transform * translation * rotation * scale;
-    return transform;
-}
-
-glakTransform& glakTransform::lookAt(const glm::vec3& center, const glm::vec3& up)
-{
-    glm::vec3 w = glm::normalize(translation * WUP);
-    glm::vec3 u = glm::normalize(glm::cross(up, w));
-    glm::vec3 v = glm::cross(w, u);
-    rotation = {
-        u.x, v.x, w.x, 0.0f,
-        u.y, v.y, w.y, 0.0f,
-        u.z, v.z, w.z, 0.0f,
-        0.0f,0.0f,0.0f,1.0f,
-    };
+    // transform = translation * rotation * scale;
+    transform = scale * rotation * translation;
     return *this;
-}
-
-glakTransform& glakTransform::lookAt(glm::vec3&& center, glm::vec3&& up)
-{
-    return lookAt(center, up);
-}
-
-glakTransform& glakTransform::lookAt(const glm::vec3& center, glm::vec3&& up)
-{
-    return lookAt(center, up);
-}
-
-glakTransform& glakTransform::lookAt(glm::vec3&& center, const glm::vec3& up)
-{
-    return lookAt(center, up);
 }
 
 #endif // GLAK_DISABLE_3D
@@ -853,13 +746,13 @@ void update_loop(glakLoopData* ld)
 
     while(ld->run)
     {
-        LAST = NOW;
-        NOW = SDL_GetPerformanceCounter();
-        deltaTime = ((NOW - LAST) * 1000.0) / (double) SDL_GetPerformanceFrequency();
-
         ld->update_mtx.lock();
         ld->draw_mtx.lock();
         ld->update_mtx.unlock();
+        
+        LAST = NOW;
+        NOW = SDL_GetPerformanceCounter();
+        deltaTime = (NOW - LAST) / (double) SDL_GetPerformanceFrequency();
 
         SDL_GL_MakeCurrent(ld->window, ld->glContext);
         update(ld, deltaTime);
@@ -884,7 +777,7 @@ void draw_loop(glakLoopData* ld)
         {
             LAST = NOW;
             NOW = SDL_GetPerformanceCounter();
-            deltaTime += ((NOW - LAST) * 1000.0) / (double) SDL_GetPerformanceFrequency();
+            deltaTime += (NOW - LAST) / (double) SDL_GetPerformanceFrequency();
             std::this_thread::yield();
         } while (vsyncDisabled && deltaTime < ld->targetDrawTime);
         for(int i = 0; i < 2 && ld->run; i++)
@@ -904,7 +797,7 @@ void draw_loop(glakLoopData* ld)
         }
         LAST = NOW;
         NOW = SDL_GetPerformanceCounter();
-        deltaTime += ((NOW - LAST) * 1000.0) / (double) SDL_GetPerformanceFrequency();
+        deltaTime += (NOW - LAST) / (double) SDL_GetPerformanceFrequency();
     }
 }
 

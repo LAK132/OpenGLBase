@@ -128,6 +128,20 @@ SOFTWARE.)");
     ImGui::PopID();
 }
 
+// model
+void model_t::updateBuffer()
+{
+    mesh.updateBuffer();
+}
+
+void model_t::draw()
+{
+    shader->enable(&(mesh.elements));
+    shader->setUniform(modelUniformName, &(transform.transform)[0][0]);
+    mesh.draw();
+    shader->disable();
+}
+
 ///
 /// loop()
 /// Called every loop
@@ -170,7 +184,7 @@ void update(glakLoopData* ld, double deltaTime)
         // Draw a window with no boarder or menu
         if(ImGui::Begin("Right Click Menu", &rightMenuOpen, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::Text("Delta Time %f", deltaTime);
+            ImGui::Text("Delta Time %f", deltaTime * 1000.0);
             // Draw the library credits
             credits();
         }
@@ -252,21 +266,37 @@ R"(
 #version 330 core
 
 in vec4 vPosition;
-in vec4 vNormal;
-in vec2 vTexCoord;
 in vec4 vColor;
+in vec3 vNormal;
+in vec2 vTexCoord;
+
+uniform mat4 projview; // projection * view // world -> camera -> screen space
+uniform mat4 invprojview; // transpose(inverse(projection * view)) // screen -> camera -> world space
+uniform mat4 model;
 
 out vec4 fColor;
+out vec3 fNormal;
+out vec3 fPosition;
+out vec3 fEye;
+
+const vec4 WUP = vec4(0.0, 0.0, 0.0, 1.0);
 
 void main()
 {
-    gl_Position = vPosition;
     fColor = vColor;
+    fEye = vec3(WUP * invprojview); // screen -> camera -> world space
+    fNormal = mat3(model) * vNormal; // object -> world space (no translation/scale)
+    vec4 vertpos = model * vPosition; // object -> world space
+    fPosition = vertpos.xyz;
+    gl_Position = projview * vertpos; // world -> camera -> screen space
 })",
 R"(
 #version 330 core
 
-in vec4 fColor;
+smooth in vec4 fColor;
+smooth in vec3 fEye;
+smooth in vec3 fNormal;
+smooth in vec3 fPosition;
 
 out vec4 pColor;
 
@@ -274,6 +304,10 @@ void main()
 { 
     pColor = fColor;
 })"));
+
+    shader->setUniform("model", &glm::mat4(1.0f));
+    shader->setUniform("projview", &glm::mat4(1.0f));
+    shader->setUniform("invprojview", &glm::transpose(glm::inverse(glm::mat4(1.0f))));
 
     for(auto it = shader->attributes.begin(); it != shader->attributes.end(); it++)
     {
@@ -284,12 +318,10 @@ void main()
     glEnable(GL_DEPTH_TEST);
 
     // Add a shader to the object
-    ud->obj.shader.resize(1);
-    ud->obj.shader[0] = shader;
+    ud->obj.shader = shader;
 
     // Add a mesh to the object
-    ud->obj.mesh.resize(1);
-    ud->obj.mesh[0].material = 0;
+    ud->obj.mesh.material = 0;
 
     // Set up tinyobj to load a model
     tinyobj::attrib_t attrib;
@@ -311,8 +343,8 @@ void main()
         const size_t sz = attrib.vertices.size()/3;
 
         // Copy vertex information
-        glakMeshElement& vpos = ud->obj.mesh[0].elements["vPosition"];
-        glm::vec4* vposptr = new glm::vec4[sz];
+        glakMeshElement& vpos = ud->obj.mesh.elements["vPosition"];
+        glm::vec4* vposptr = (glm::vec4*)vpos.init(sizeof(glm::vec4), sz);
         for(size_t i = 0, j = 0; i < sz; i++)
         {
             vposptr[i].x = attrib.vertices[j++]/10.0f;
@@ -320,16 +352,14 @@ void main()
             vposptr[i].z = attrib.vertices[j++]/10.0f;
             vposptr[i].w = 1.0f;
         }
-        vpos.data = shared_ptr<void>(vposptr, default_delete<glm::vec4[]>());
-        vpos.size = sizeof(glm::vec4) * sz;
         vpos.normalized = false;
-        vpos.stride = 0;
+        vpos.active = true;
 
         // Copy index information
-        ud->obj.mesh[0].index.resize(shape[0].mesh.indices.size());
-        for(size_t i = 0; i < ud->obj.mesh[0].index.size(); i++)
+        ud->obj.mesh.index.resize(shape[0].mesh.indices.size());
+        for(size_t i = 0; i < ud->obj.mesh.index.size(); i++)
         {
-            ud->obj.mesh[0].index[i] = shape[0].mesh.indices[i].vertex_index;
+            ud->obj.mesh.index[i] = shape[0].mesh.indices[i].vertex_index;
         }
     }
     else
@@ -338,30 +368,26 @@ void main()
         cout << "Error opening OBJ file " << endl;
 
         // Add vertices
-        glakMeshElement& vpos = ud->obj.mesh[0].elements["vPosition"];
-        glm::vec4* vposp = new glm::vec4[4];
+        glakMeshElement& vpos = ud->obj.mesh.elements["vPosition"];
+        glm::vec4* vposp = (glm::vec4*)vpos.init(sizeof(glm::vec4), 4);
         vposp[0] = {-0.7f, -0.7f, 0.0f, 1.0f};
         vposp[1] = {-0.7f,  0.7f, 0.0f, 1.0f};
         vposp[2] = { 0.7f, -0.7f, 0.0f, 1.0f};
         vposp[3] = { 0.7f,  0.7f, 0.0f, 1.0f};
-        vpos.data = shared_ptr<void>(vposp, default_delete<glm::vec4[]>());
-        vpos.size = sizeof(glm::vec4) * 4;
         vpos.normalized = false;
-        vpos.stride = 0;
+        vpos.active = true;
 
         // Add colors
-        glakMeshElement& vcol = ud->obj.mesh[0].elements["vColor"];
-        glm::vec4* vcolp = new glm::vec4[4];
+        glakMeshElement& vcol = ud->obj.mesh.elements["vColor"];
+        glm::vec4* vcolp = (glm::vec4*)vcol.init(sizeof(glm::vec4), 4);
         vcolp[0] = {1.0f, 0.0f, 0.0f, 1.0f};
         vcolp[1] = {0.0f, 1.0f, 0.0f, 1.0f};
         vcolp[2] = {0.0f, 0.0f, 1.0f, 1.0f};
         vcolp[3] = {1.0f, 1.0f, 1.0f, 1.0f};
-        vcol.data = shared_ptr<void>(vcolp, default_delete<glm::vec4[]>());
-        vcol.size = sizeof(glm::vec4) * 4;
         vcol.normalized = false;
-        vcol.stride = 0;
+        vcol.active = true;
 
-        ud->obj.mesh[0].index = {0, 1, 2, 1, 2, 3};
+        ud->obj.mesh.index = {0, 1, 2, 1, 2, 3};
     }
 
     glViewport(0, 0, 500, 500);
