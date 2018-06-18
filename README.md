@@ -11,13 +11,9 @@ Base for C++ OpenGL Apps
 
 [dear-imgui SDL2/gl3w implementation](https://github.com/ocornut/imgui/tree/master/examples/sdl_opengl3_example)
 
-[tiny-obj-loader](https://github.com/syoyo/tinyobjloader)
-
 [gl3w](https://github.com/skaslev/gl3w)
 
 [glm](https://glm.g-truc.net/0.9.8/index.html)
-
-[glak](https://github.com/LAK132/glak)
 
 # Building
 
@@ -29,6 +25,6 @@ Base for C++ OpenGL Apps
 
 ## Linux
 
-1. Install the SDL2
+1. Install SDL2
 
 2. Run `make all`
