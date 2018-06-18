@@ -1,10 +1,14 @@
 call "D:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %1
 
+set CPPVER=c++latest
 set OUTDIR=out
 set BINDIR=bin
 set LIBDIR=lib
 set LIBS=SDL2main.lib SDL2.lib
 set APP=app.exe
+
+set COMOPTS=
+REM -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS
 
 set SOURCES=main imgui libs 
 
