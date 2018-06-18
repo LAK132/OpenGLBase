@@ -58,7 +58,7 @@ for %%P in (%SOURCES%) do (
         set allobj=!allobj! %BINDIR%/%%O.obj
         set inc=
         for %%I in (!%%P_INC!) do (set inc=!inc! /I%%I)
-        call cl /nologo /MD -EHsc %COMPCOM% /Fo:%BINDIR%/%%O.obj /c !%%P_SRC!/%%O !inc!
+        call cl /std:%CPPVER% /nologo /MD -EHsc %COMPOPTS% %COMPCOM% /Fo:%BINDIR%/%%O.obj /c !%%P_SRC!/%%O !inc!
     )
 )
 call link /nologo %LINKCOM% /out:%OUT% %allobj% %_LIBS%
