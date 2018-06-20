@@ -36,11 +36,11 @@ SOFTWARE.
 #include <unordered_map>
 #include <iostream>
 
-#include <GL/gl3w.h>
-
 #include <lak/stride_vector.hpp>
 #include <lak/stream_util.hpp>
+
 #include <lak/texture.hpp>
+#include <GL/gl3w.h>
 
 #ifndef LAK_GRAPHICS_H
 #define LAK_GRAPHICS_H
@@ -57,46 +57,9 @@ namespace lak
     struct shader_t;
     struct mesh_t;
 
-    bool initShader(const string& src, GLuint program, GLenum type)
-    {
-        GLuint shader = glCreateShader(type);
-        GLchar* shadercstr = (GLchar*)&(src[0]);
-        glShaderSource(shader, 1, &shadercstr, NULL);
-        glCompileShader(shader);
-        GLint compiled;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-        if(!compiled)
-        {
-            GLint msgSize = 0;
-            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &msgSize);
-            string msg; msg.resize(msgSize);
-            glGetShaderInfoLog(shader, msgSize, NULL, &(msg[0]));
-            DEBUG("Error compiling shader " << src << endl << msg << endl);
-            return false;
-        }
-        glAttachShader(program, shader);
-        return true;
-    }
-    bool initShader(string&& src, GLuint program, GLenum type)
-    {
-        return initShader(src, program, type);
-    }
-    bool linkProgram(GLuint program)
-    {
-        glLinkProgram(program);
-        GLint linked;
-        glGetProgramiv(program, GL_LINK_STATUS, &linked);
-        if(!linked)
-        {
-            GLint msgSize;
-            glGetProgramiv(program, GL_INFO_LOG_LENGTH, &msgSize);
-            string msg; msg.resize(msgSize);
-            glGetProgramInfoLog(program, msgSize, NULL, &(msg[0]));
-            DEBUG("Shader program failed to link" << endl << msg << endl);
-            return false;
-        }
-        return true;
-    }
+    bool initShader(const string& code, GLuint program, GLenum type);
+    bool initShader(string&& code, GLuint program, GLenum type);
+    bool linkProgram(GLuint program);
 
     struct mesh_t
     {
@@ -181,6 +144,47 @@ namespace lak
 
 namespace lak
 {
+    bool initShader(const string& code, GLuint program, GLenum type)
+    {
+        GLuint shader = glCreateShader(type);
+        GLchar* shadercstr = (GLchar*)&(code[0]);
+        glShaderSource(shader, 1, &shadercstr, NULL);
+        glCompileShader(shader);
+        GLint compiled;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+        if(!compiled)
+        {
+            GLint msgSize = 0;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &msgSize);
+            string msg; msg.resize(msgSize);
+            glGetShaderInfoLog(shader, msgSize, NULL, &(msg[0]));
+            DEBUG("Error compiling shader " << code << endl << msg << endl);
+            return false;
+        }
+        glAttachShader(program, shader);
+        return true;
+    }
+    bool initShader(string&& code, GLuint program, GLenum type)
+    {
+        return initShader(code, program, type);
+    }
+    bool linkProgram(GLuint program)
+    {
+        glLinkProgram(program);
+        GLint linked;
+        glGetProgramiv(program, GL_LINK_STATUS, &linked);
+        if(!linked)
+        {
+            GLint msgSize;
+            glGetProgramiv(program, GL_INFO_LOG_LENGTH, &msgSize);
+            string msg; msg.resize(msgSize);
+            glGetProgramInfoLog(program, msgSize, NULL, &(msg[0]));
+            DEBUG("Shader program failed to link" << endl << msg << endl);
+            return false;
+        }
+        return true;
+    }
+
     // shader_t
     shader_t::shader_t(){}
 
@@ -238,6 +242,11 @@ namespace lak
         glGetProgramiv(*program, GL_ACTIVE_ATTRIBUTES, &count);
         for (GLint i = 0; i < count; i++)
         {
+            // FFR: type = advanced type ie GL_UNSIGNED_INT_VEC4, size = units of type (?)
+            // elem.type = basic type ie GL_UNSIGNED_INT, elem.size = units of elem.type
+            // where type = GL_FLOAT_VEC4 and size = 1 then elem.type = GL_FLOAT and elem.size = 4 (??)
+            // https://www.gamedev.net/forums/topic/545284-glsl-glgetactiveattrib---the-size-parameter/
+            for(size_t i = 0; i < name.size(); i++) name[i] = '\0';
             glGetActiveAttrib(*program, (GLuint)i, nameLen, &length, &size, &type, &name[0]);
             element_t elem;
             elem.position = glGetAttribLocation(*program, &name[0]);
@@ -254,11 +263,12 @@ namespace lak
         glGetProgramiv(*program, GL_ACTIVE_UNIFORMS, &count);
         for (GLint i = 0; i < count; i++)
         {
-            glGetActiveUniform(*program, (GLuint)i, nameLen, &length, &size, &type, &name[0]);
+            // FFR: type == elem.type
+            // size == elem.size (number of type in array, IF it is an array, else 1)
+            for(size_t i = 0; i < name.size(); i++) name[i] = '\0';
             element_t elem;
+            glGetActiveUniform(*program, (GLuint)i, nameLen, &length, &elem.size, &elem.type, &name[0]);
             elem.position = glGetUniformLocation(*program, &name[0]);
-            elem.type = type;
-            glGetUniformiv(i, GL_UNIFORM_SIZE, &elem.size);
             elem.name = &name[0];
             uniforms[elem.name] = elem;
         }
